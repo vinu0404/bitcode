@@ -1,0 +1,117 @@
+{
+  "slug": "adder4",
+  "title": "4-bit Adder",
+  "difficulty": "easy",
+  "kind": "combinational",
+  "topics": [
+    "Arithmetic",
+    "Combinational Logic"
+  ],
+  "statement_md": "Create a combinational module named `adder4`. Inputs `a` and `b` are 4 bits each. Input `cin` is the carry-in. Output `sum` is 4 bits and `cout` is the carry-out. The circuit must calculate `a + b + cin`.",
+  "starter_code": "module adder4 (\n    input  logic [3:0] a,\n    input  logic [3:0] b,\n    input  logic       cin,\n    output logic [3:0] sum,\n    output logic       cout\n);\n    // Write your code here\nendmodule\n",
+  "interface": {
+    "module": "adder4",
+    "ports": [
+      {
+        "name": "a",
+        "dir": "input",
+        "width": 4
+      },
+      {
+        "name": "b",
+        "dir": "input",
+        "width": 4
+      },
+      {
+        "name": "cin",
+        "dir": "input",
+        "width": 1
+      },
+      {
+        "name": "sum",
+        "dir": "output",
+        "width": 4
+      },
+      {
+        "name": "cout",
+        "dir": "output",
+        "width": 1
+      }
+    ]
+  },
+  "constraints": {
+    "banned_tasks": []
+  },
+  "rubric": {
+    "interface": 20,
+    "functional": 65,
+    "combinational": 15
+  },
+  "sample_tests": [
+    {
+      "input": "a=0, b=0, cin=0",
+      "expected": "sum=0, cout=0"
+    },
+    {
+      "input": "result <= 15",
+      "expected": "sum contains the 4-bit result; cout=0 unless overflow"
+    },
+    {
+      "input": "result >= 16",
+      "expected": "sum contains lower 4 bits; cout=1"
+    }
+  ],
+  "tests": [
+    {
+      "test_id": "T1",
+      "purpose": "Zero case",
+      "category": "logic",
+      "bucket": "functional",
+      "hint": "0 + 0 + 0 must produce sum=0 and cout=0."
+    },
+    {
+      "test_id": "T2",
+      "purpose": "Basic addition",
+      "category": "logic",
+      "bucket": "functional",
+      "hint": "Check plain addition without any carry involved."
+    },
+    {
+      "test_id": "T3",
+      "purpose": "Carry-in",
+      "category": "logic",
+      "bucket": "functional",
+      "hint": "cin must be added into the result, not ignored."
+    },
+    {
+      "test_id": "T4",
+      "purpose": "Maximum without carry-in",
+      "category": "logic",
+      "bucket": "functional",
+      "hint": "15 + 0 + 0 should not set cout."
+    },
+    {
+      "test_id": "T5",
+      "purpose": "Overflow",
+      "category": "width",
+      "bucket": "functional",
+      "hint": "The addition result needs 5 bits internally \u2014 15 + 1 must produce sum=0 and cout=1."
+    },
+    {
+      "test_id": "T6",
+      "purpose": "Max operands",
+      "category": "width",
+      "bucket": "functional",
+      "hint": "15 + 15 + 1 = 31, which needs 5 bits; sum holds the lower 4, cout holds the 5th."
+    },
+    {
+      "test_id": "T7",
+      "purpose": "Mixed carry",
+      "category": "width",
+      "bucket": "functional",
+      "hint": "9 + 7 = 16 exactly \u2014 verify this sets cout without leaving a stale value in sum."
+    }
+  ],
+  "testbench_sv": "`timescale 1ns/1ps\nmodule tb;\n  reg  [3:0] a, b;\n  reg        cin;\n  wire [3:0] sum;\n  wire       cout;\n\n  adder4 dut (.a(a), .b(b), .cin(cin), .sum(sum), .cout(cout));\n\n  initial begin\n    #10000 $display(\"##TIMEOUT\");\n    $finish;\n  end\n\n  initial begin\n    a=4'd0; b=4'd0; cin=1'b0; #1;\n    if (sum===4'd0 && cout===1'b0) $display(\"##TEST T1 PASS exp=sum0,cout0 got=sum%0d,cout%0d\", sum, cout);\n    else $display(\"##TEST T1 FAIL exp=sum0,cout0 got=sum%0d,cout%0d\", sum, cout);\n\n    a=4'd3; b=4'd5; cin=1'b0; #1;\n    if (sum===4'd8 && cout===1'b0) $display(\"##TEST T2 PASS exp=sum8,cout0 got=sum%0d,cout%0d\", sum, cout);\n    else $display(\"##TEST T2 FAIL exp=sum8,cout0 got=sum%0d,cout%0d\", sum, cout);\n\n    a=4'd3; b=4'd5; cin=1'b1; #1;\n    if (sum===4'd9 && cout===1'b0) $display(\"##TEST T3 PASS exp=sum9,cout0 got=sum%0d,cout%0d\", sum, cout);\n    else $display(\"##TEST T3 FAIL exp=sum9,cout0 got=sum%0d,cout%0d\", sum, cout);\n\n    a=4'd15; b=4'd0; cin=1'b0; #1;\n    if (sum===4'd15 && cout===1'b0) $display(\"##TEST T4 PASS exp=sum15,cout0 got=sum%0d,cout%0d\", sum, cout);\n    else $display(\"##TEST T4 FAIL exp=sum15,cout0 got=sum%0d,cout%0d\", sum, cout);\n\n    a=4'd15; b=4'd1; cin=1'b0; #1;\n    if (sum===4'd0 && cout===1'b1) $display(\"##TEST T5 PASS exp=sum0,cout1 got=sum%0d,cout%0d\", sum, cout);\n    else $display(\"##TEST T5 FAIL exp=sum0,cout1 got=sum%0d,cout%0d\", sum, cout);\n\n    a=4'd15; b=4'd15; cin=1'b1; #1;\n    if (sum===4'd15 && cout===1'b1) $display(\"##TEST T6 PASS exp=sum15,cout1 got=sum%0d,cout%0d\", sum, cout);\n    else $display(\"##TEST T6 FAIL exp=sum15,cout1 got=sum%0d,cout%0d\", sum, cout);\n\n    a=4'd9; b=4'd7; cin=1'b0; #1;\n    if (sum===4'd0 && cout===1'b1) $display(\"##TEST T7 PASS exp=sum0,cout1 got=sum%0d,cout%0d\", sum, cout);\n    else $display(\"##TEST T7 FAIL exp=sum0,cout1 got=sum%0d,cout%0d\", sum, cout);\n\n    $display(\"##DONE\");\n    $finish;\n  end\nendmodule\n",
+  "reference_sv": "module adder4 (\n    input  logic [3:0] a,\n    input  logic [3:0] b,\n    input  logic       cin,\n    output logic [3:0] sum,\n    output logic       cout\n);\n    assign {cout, sum} = a + b + cin;\nendmodule\n"
+}

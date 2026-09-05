@@ -1,0 +1,50 @@
+# ── env / secrets ───────────────────────────────────────────────────────
+# .env.example is the only env file meant to be committed — everything
+# else carries real local values (DATABASE_URL, JWT_SECRET, a real
+# OPENAI_API_KEY today). The `!` re-includes it after the broader `.env*`
+# ignore below.
+.env*
+!.env.example
+
+# ── Next.js (web/) — official create-next-app template, adapted for a
+#    subdirectory rather than repo root ────────────────────────────────
+web/node_modules/
+web/.pnp
+web/.pnp.*
+web/.yarn/*
+!web/.yarn/patches
+!web/.yarn/plugins
+!web/.yarn/releases
+!web/.yarn/versions
+web/.next/
+web/out/
+web/build/
+web/*.tsbuildinfo
+web/next-env.d.ts
+web/.vercel
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Python (api/) ───────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg
+api/_tmp_test/
+# Only relevant if a venv is ever created locally rather than via Docker.
+.venv/
+venv/
+
+# ── editors / OS ────────────────────────────────────────────────────────
+.DS_Store
+*.pem
+.vscode/
+.idea/
+*.swp
+
+# ── Claude Code — personal/local settings, not shared project config ────
+.claude/settings.local.json
