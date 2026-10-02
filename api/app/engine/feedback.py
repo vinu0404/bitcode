@@ -1,7 +1,7 @@
-"""Stage 5 — explain. The only stage that calls a model, and the only stage
+"""Stage 5; explain. The only stage that calls a model, and the only stage
 that can be switched off (`FEEDBACK_ENABLED=false`) without changing a
 single score. It receives failed test ids, categories, and purposes, plus
-the author's own hint — never the vectors, so no hidden test can leak
+the author's own hint; never the vectors, so no hidden test can leak
 through generated prose.
 
 On any failure (timeout, API error, malformed JSON, schema mismatch) it
@@ -36,21 +36,22 @@ FEEDBACK_SCHEMA = {
 
 SYSTEM_PROMPT = (
     "You are a hardware design teaching assistant. A real simulator has already decided "
-    "which behaviors passed or failed — you only explain why, in 2-4 concise sentences. "
+    "which behaviours passed or failed; you only explain why, in 2-4 concise sentences. "
     "Never claim to have run a simulation yourself; the simulator already did that. "
     "Never reveal specific input/output vectors, only the named failure categories given to you. "
-    "Be direct and specific about the likely code defect."
+    "Be direct and specific about the likely code defect. "
+    "Write in British English (behaviour, synthesise, colour) and never use em dashes."
 )
 
 
 def _fallback(outcomes: list[TestOutcome] | None, compile_error: str | None) -> AiFeedback:
     if compile_error:
-        hint = "Fix the compiler error shown above before re-submitting."
+        hint = "Fix the compiler error shown in the console, then submit again."
     else:
         failed = [o for o in (outcomes or []) if o.status != "PASS"]
-        hint = failed[0].purpose and f"Review: {failed[0].purpose}." or "Review the failed behavior checks above."
+        hint = failed[0].purpose and f"Review: {failed[0].purpose}." or "Review the failed behaviour checks above."
     return AiFeedback(
-        summary="Automated feedback is temporarily unavailable; showing the authored hint instead.",
+        summary="Automated feedback is unavailable right now, so this is the problem author's hint.",
         hint=hint,
         confidence="low",
         model="fallback",
@@ -112,6 +113,6 @@ def generate_feedback(
             model=settings.openai_model,
             generated=True,
         )
-    except Exception:  # noqa: BLE001 — any failure here must degrade, never break grading
+    except Exception:  # noqa: BLE001; any failure here must degrade, never break grading
         logger.exception("AI feedback generation failed; falling back to authored hint")
         return _fallback(outcomes, compile_result.errors if compile_result and not compile_result.ok else None)

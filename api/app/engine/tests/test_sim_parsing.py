@@ -19,7 +19,7 @@ def test_parse_mixed_results_preserves_exp_got():
 
 
 def test_missing_test_line_becomes_uncertain():
-    """Simulates a run that hung partway through — T2 never printed."""
+    """Simulates a run that hung partway through; T2 never printed."""
     stdout = "##TEST T1 PASS exp=00 got=00\n##TIMEOUT\n"
     declared = {"T1": ("logic", "p1"), "T2": ("logic", "p2")}
     outcomes, saw_done = parse_tests(stdout, declared)

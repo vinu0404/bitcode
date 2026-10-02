@@ -25,6 +25,11 @@ class TestMeta:
     category: str  # reset | width | logic | timing | interface
     hint: str
     bucket: str  # which rubric bucket this test's pass/fail feeds
+    # Visible tests run on Run with full EXPECTED/GOT and a waveform; hidden
+    # ones only ever report a number and a status. The validation gate
+    # enforces that every visible test executes before any hidden one, so
+    # a waveform cut at the last visible check can't contain hidden stimuli.
+    visible: bool = False
 
 
 @dataclass
@@ -45,6 +50,7 @@ class CompileResult:
     ok: bool
     errors: str = ""
     warnings: str = ""
+    duration_ms: int = 0
 
 
 @dataclass
@@ -55,6 +61,7 @@ class TestOutcome:
     purpose: str = ""
     exp: str | None = None
     got: str | None = None
+    at_ns: float | None = None  # simulation time the test bench checked this test
 
 
 @dataclass
@@ -92,6 +99,10 @@ class GradeResult:
     score: ScoreResult | None
     ai_feedback: AiFeedback | None
     static_reject_reason: str | None = None
+    # The word the UI shows (design spec 6.4): ACCEPTED, WRONG ANSWER,
+    # COMPILE ERROR, TIME LIMIT, RUNTIME ERROR. `verdict` stays the stored,
+    # stats-facing value.
+    verdict_word: str = ""
 
 
 @dataclass
@@ -107,20 +118,21 @@ class WaveSignal:
     name: str
     width: int
     changes: list[list]  # [[time, value_as_binary_str_or_0/1/x/z], ...], time-ordered
+    kind: str = ""  # clock | input | output, set by the caller from the problem's ports
 
 
 @dataclass
 class Waveform:
-    end_time: int | float  # nanoseconds — converted from raw VCD ticks, see vcdparse.py
+    end_time: int | float  # nanoseconds; converted from raw VCD ticks, see vcdparse.py
     signals: list[WaveSignal]
 
 
 @dataclass
 class RunResult:
-    """Result of POST /submissions/run — unscored, compares against reference.sv live.
+    """Result of POST /submissions/run; unscored, compares against reference.sv live.
 
     `raw_log` and `waveform` are only ever populated here, never on a graded
-    submission — the student's own vectors have nothing hidden to protect,
+    submission; the student's own vectors have nothing hidden to protect,
     so the full simulator output and a real waveform are safe to hand back.
     """
 
@@ -130,3 +142,26 @@ class RunResult:
     comparisons: list[VecComparison] = field(default_factory=list)
     raw_log: str = ""
     waveform: Waveform | None = None
+
+
+@dataclass
+class ConsoleLine:
+    time: str  # "8ms" for compiler lines, "40ns" (simulation time) for test bench lines
+    source: str  # CC (compiler) | TB (test bench) | SIM (simulator)
+    level: str  # info | warn | error
+    text: str
+    line: int | None = None  # line in the student's file, when the message points at one
+
+
+@dataclass
+class TestsRunResult:
+    """Result of Run: the problem's visible tests only."""
+
+    compile: CompileResult
+    ran: bool
+    timed_out: bool
+    tests: list[TestOutcome] = field(default_factory=list)
+    console: list[ConsoleLine] = field(default_factory=list)
+    waveform: Waveform | None = None
+    duration_ms: int = 0
+    verdict_word: str = ""  # PASSED | WRONG ANSWER | COMPILE ERROR | TIME LIMIT | RUNTIME ERROR

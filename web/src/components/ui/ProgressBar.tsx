@@ -2,24 +2,23 @@
 
 import { motion } from "framer-motion";
 
-// Law of Prägnanz: a filled bar reads instantly as "how much" — simpler
-// for the eye to parse than the same fact as bare digits alone, so every
-// numeric score/breakdown pairs a bar with its number, never just the number.
+/** A filled hairline bar: reads as "how much" faster than bare digits, so it
+ * always sits beside its number, never instead of it. */
 export default function ProgressBar({
   value,
   max = 100,
-  tone = "accent",
-  height = 6,
+  tone = "action",
+  height = 4,
 }: {
   value: number;
   max?: number;
-  tone?: "accent" | "pass" | "fail" | "warn" | "signal";
+  tone?: "action" | "pass" | "fail" | "warn";
   height?: number;
 }) {
   const pct = Math.max(0, Math.min(100, (value / max) * 100));
-  const color = `var(--${tone === "accent" ? "accent" : tone})`;
+  const color = tone === "action" ? "var(--action)" : `var(--${tone})`;
   return (
-    <div style={{ height, borderRadius: 999, background: "var(--surface-2)", overflow: "hidden" }}>
+    <div style={{ height, borderRadius: 999, background: "var(--border)", overflow: "hidden" }}>
       <motion.div
         initial={{ width: 0 }}
         animate={{ width: `${pct}%` }}

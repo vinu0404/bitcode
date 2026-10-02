@@ -1,6 +1,6 @@
 """Build a ProblemSpec from the JSON shape used by both the seed files
 (`app/seed/problems/*.json`) and the CLI. Kept separate from `grader.py`
-so the CLI can run against a bare JSON file with no database at all —
+so the CLI can run against a bare JSON file with no database at all:
 this is what build-order step 2 in the plan means by "engine standalone".
 """
 
@@ -9,16 +9,23 @@ from __future__ import annotations
 from app.engine.types import Port, ProblemSpec, TestMeta
 
 
-def problem_spec_from_orm(problem) -> ProblemSpec:  # noqa: ANN001 — app.models.Problem, avoided to keep engine DB-free
+def problem_spec_from_orm(problem) -> ProblemSpec:  # noqa: ANN001; app.models.Problem, avoided to keep engine DB-free
     """Same construction as `problem_spec_from_dict`, but reading straight
     off SQLAlchemy rows. Requires `problem.asset` and `problem.tests` to be
     loaded. This is the ONLY place a router-side ORM row crosses into the
-    engine's plain-dataclass world — the engine itself never imports
+    engine's plain-dataclass world; the engine itself never imports
     SQLAlchemy."""
     interface = problem.interface
     ports = [Port(name=p["name"], dir=p["dir"], width=p["width"]) for p in interface["ports"]]
     tests = [
-        TestMeta(test_id=t.test_id, purpose=t.purpose, category=t.category, hint=t.hint, bucket=t.bucket)
+        TestMeta(
+            test_id=t.test_id,
+            purpose=t.purpose,
+            category=t.category,
+            hint=t.hint,
+            bucket=t.bucket,
+            visible=bool(t.visible),
+        )
         for t in problem.tests
     ]
     return ProblemSpec(
@@ -44,6 +51,7 @@ def problem_spec_from_dict(data: dict) -> ProblemSpec:
             category=t["category"],
             hint=t["hint"],
             bucket=t["bucket"],
+            visible=bool(t.get("visible", False)),
         )
         for t in data["tests"]
     ]

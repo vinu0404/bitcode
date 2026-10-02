@@ -34,12 +34,12 @@ def create_access_token(user_id: uuid.UUID, role: str) -> str:
 
 
 def decode_token(token: str) -> dict:
-    """Raises jwt.PyJWTError on any invalid/expired token — callers catch it."""
+    """Raises jwt.PyJWTError on any invalid/expired token; callers catch it."""
     return jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
 
 
 def new_refresh_token() -> tuple[str, str, datetime]:
-    """Returns (raw_token, sha256_hash, expires_at). Only the hash is stored —
+    """Returns (raw_token, sha256_hash, expires_at). Only the hash is stored:
     a stolen database dump doesn't hand over usable refresh tokens."""
     raw = secrets.token_urlsafe(48)
     digest = hash_refresh_token(raw)

@@ -1,5 +1,5 @@
 """The gate described in the design doc §7, run as plain pytest instead of
-through the admin API — this is what CI (or a pre-deploy check) runs
+through the admin API; this is what CI (or a pre-deploy check) runs
 against every problem in `app/seed/problems/`, and it is exactly what the
 admin `/validate` endpoint runs against a problem authored through the UI.
 

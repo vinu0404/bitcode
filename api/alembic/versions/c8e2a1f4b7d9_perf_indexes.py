@@ -1,26 +1,26 @@
 """performance indexes
 
-Every index here is tied to a query that actually runs today — not
+Every index here is tied to a query that actually runs today; not
 speculative. Before this migration:
 
   - `submissions` had ZERO indexes beyond its primary key. Postgres does
     NOT auto-index a foreign-key column (only the referenced side gets
-    one) — every "my submissions" / "have I solved this" / heatmap query
+    one); every "my submissions" / "have I solved this" / heatmap query
     (list_problems, admin list, /api/me/stats) was a full table scan on
     user_id.
   - `problems` had only a unique index on `slug`. Every list endpoint
-    filters `status` and orders by `order_index` — also a full scan.
+    filters `status` and orders by `order_index`; also a full scan.
   - `problem_tests` had no index on `problem_id`, despite being read on
     every single grade call (`_load_published_problem` in both
     submissions.py and admin.py).
 
 Deliberately NOT added: a bare `submissions.problem_id` index (nothing in
-the codebase filters on it alone — always paired with user_id, which the
+the codebase filters on it alone; always paired with user_id, which the
 composite below already covers as its leading column), a `results.verdict`
 index (always reached through a submissions.user_id-narrowed join, never
 scanned globally), and anything on `problem_validations` (admin-only,
 low-frequency, and its `problem.validations` collection is never read back
-in application code — only appended to). Indexes cost write throughput and
+in application code; only appended to). Indexes cost write throughput and
 storage; add one when a real query needs it, not by default.
 
 Revision ID: c8e2a1f4b7d9

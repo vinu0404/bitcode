@@ -1,10 +1,10 @@
-"""Stage 4 — score. A pure function of (rubric, declared tests, test outcomes).
+"""Stage 4; score. A pure function of (rubric, declared tests, test outcomes).
 
 No model, no I/O, nothing probabilistic. Two identical submissions always
 receive identical scores.
 
 The "interface" bucket (and any bucket with zero declared tests) is scored
-by compile success alone — this mirrors the rubrics in the problem spec,
+by compile success alone; this mirrors the rubrics in the problem spec,
 where "correct module name and ports" is awarded once the design binds
 cleanly, not by a dedicated hidden test.
 """

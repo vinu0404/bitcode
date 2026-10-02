@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     # Explicit rather than left to SQLAlchemy's defaults (5/10/-1): a
     # managed Postgres (Neon, Supabase, RDS) typically drops idle server-
     # side connections well under an hour, and pool_pre_ping alone only
-    # catches that on next checkout, not proactively — pool_recycle forces
+    # catches that on next checkout, not proactively; pool_recycle forces
     # a periodic reconnect before that happens. Sized for a single free-
     # tier container (~2 vCPU), not a multi-instance deployment.
     db_pool_size: int = 5

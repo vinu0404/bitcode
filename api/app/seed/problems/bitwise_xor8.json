@@ -1,13 +1,16 @@
 {
   "slug": "bitwise_xor8",
-  "title": "8-bit Bitwise XOR Gate",
+  "number": 1,
+  "title": "Build an 8-bit bitwise XOR",
+  "domain": "vlsi",
+  "language": "sv",
   "difficulty": "easy",
   "kind": "combinational",
   "topics": [
     "Bitwise Logic",
     "Combinational Logic"
   ],
-  "statement_md": "Create a module named `bitwise_xor8` with two 8-bit inputs `a` and `b`, and one 8-bit output `y`. Each output bit must be the XOR of the corresponding input bits. This is combinational logic: the output must change whenever the inputs change.",
+  "statement_md": "Create a module named `bitwise_xor8` with two 8-bit inputs `a` and `b` and one 8-bit output `y`. Each output bit is the XOR of the matching input bits. The logic is combinational, so `y` must follow the inputs whenever either of them changes.",
   "starter_code": "module bitwise_xor8 (\n    input  logic [7:0] a,\n    input  logic [7:0] b,\n    output logic [7:0] y\n);\n    // Write your code here\nendmodule\n",
   "interface": {
     "module": "bitwise_xor8",
@@ -15,17 +18,20 @@
       {
         "name": "a",
         "dir": "input",
-        "width": 8
+        "width": 8,
+        "desc": "First operand"
       },
       {
         "name": "b",
         "dir": "input",
-        "width": 8
+        "width": 8,
+        "desc": "Second operand"
       },
       {
         "name": "y",
         "dir": "output",
-        "width": 8
+        "width": 8,
+        "desc": "Bitwise a XOR b"
       }
     ]
   },
@@ -54,54 +60,66 @@
   "tests": [
     {
       "test_id": "T1",
-      "purpose": "All zeros",
+      "purpose": "outputs 0 when both inputs are 0",
       "category": "logic",
       "bucket": "functional",
-      "hint": "Check that every output bit uses ^ (XOR), not | or +."
+      "hint": "Check that every output bit uses ^ (XOR), not | or +.",
+      "visible": true
     },
     {
       "test_id": "T2",
-      "purpose": "One operand zero",
+      "purpose": "passes a through when b is 0",
       "category": "logic",
       "bucket": "functional",
-      "hint": "XOR with zero should pass the other operand through unchanged."
+      "hint": "XOR with zero should pass the other operand through unchanged.",
+      "visible": true
     },
     {
       "test_id": "T3",
-      "purpose": "Same values cancel",
+      "purpose": "cancels to 0 when a equals b",
       "category": "logic",
       "bucket": "functional",
-      "hint": "XOR of identical operands must be zero in every bit position."
+      "hint": "XOR of identical operands must be zero in every bit position.",
+      "visible": false
     },
     {
       "test_id": "T4",
-      "purpose": "Alternating pattern",
+      "purpose": "sets every bit for complementary inputs",
       "category": "logic",
       "bucket": "functional",
-      "hint": "Check that every output bit uses ^, not | or +."
+      "hint": "Check that every output bit uses ^, not | or +.",
+      "visible": false
     },
     {
       "test_id": "T5",
-      "purpose": "Mixed pattern",
+      "purpose": "keeps bit positions independent on a mixed pattern",
       "category": "logic",
       "bucket": "functional",
-      "hint": "Check which operator you used \u2014 addition carries information between bit positions, XOR must not."
+      "hint": "Check which operator you used. Addition carries information between bit positions; XOR must not.",
+      "visible": false
     },
     {
       "test_id": "T6",
-      "purpose": "Bit independence",
+      "purpose": "changes only the bit that differs",
       "category": "logic",
       "bucket": "functional",
-      "hint": "Each output bit must depend only on the matching input bits, not neighboring bits."
+      "hint": "Each output bit must depend only on the matching input bits, not on neighbouring bits.",
+      "visible": false
     },
     {
       "test_id": "T7",
-      "purpose": "Only b changes",
+      "purpose": "updates when only b changes",
       "category": "logic",
       "bucket": "functional",
-      "hint": "The output must update whenever b changes, even if a stays the same \u2014 avoid an incomplete sensitivity list."
+      "hint": "The output must update whenever b changes, even if a stays the same. Avoid an incomplete sensitivity list.",
+      "visible": false
     }
   ],
   "testbench_sv": "`timescale 1ns/1ps\nmodule tb;\n  reg  [7:0] a, b;\n  wire [7:0] y;\n\n  bitwise_xor8 dut (.a(a), .b(b), .y(y));\n\n  initial begin\n    #10000 $display(\"##TIMEOUT\");\n    $finish;\n  end\n\n  initial begin\n    a = 8'h00; b = 8'h00; #1;\n    if (y === 8'h00) $display(\"##TEST T1 PASS exp=00 got=%02h\", y);\n    else $display(\"##TEST T1 FAIL exp=00 got=%02h\", y);\n\n    a = 8'hA5; b = 8'h00; #1;\n    if (y === 8'hA5) $display(\"##TEST T2 PASS exp=a5 got=%02h\", y);\n    else $display(\"##TEST T2 FAIL exp=a5 got=%02h\", y);\n\n    a = 8'h5A; b = 8'h5A; #1;\n    if (y === 8'h00) $display(\"##TEST T3 PASS exp=00 got=%02h\", y);\n    else $display(\"##TEST T3 FAIL exp=00 got=%02h\", y);\n\n    a = 8'hAA; b = 8'h55; #1;\n    if (y === 8'hFF) $display(\"##TEST T4 PASS exp=ff got=%02h\", y);\n    else $display(\"##TEST T4 FAIL exp=ff got=%02h\", y);\n\n    a = 8'h3C; b = 8'hA7; #1;\n    if (y === 8'h9B) $display(\"##TEST T5 PASS exp=9b got=%02h\", y);\n    else $display(\"##TEST T5 FAIL exp=9b got=%02h\", y);\n\n    a = 8'h01; b = 8'h00; #1;\n    if (y === 8'h01) $display(\"##TEST T6 PASS exp=01 got=%02h\", y);\n    else $display(\"##TEST T6 FAIL exp=01 got=%02h\", y);\n\n    b = 8'hFF; #1;\n    if (y === 8'hFE) $display(\"##TEST T7 PASS exp=fe got=%02h\", y);\n    else $display(\"##TEST T7 FAIL exp=fe got=%02h\", y);\n\n    $display(\"##DONE\");\n    $finish;\n  end\nendmodule\n",
-  "reference_sv": "module bitwise_xor8 (\n    input  logic [7:0] a,\n    input  logic [7:0] b,\n    output logic [7:0] y\n);\n    assign y = a ^ b;\nendmodule\n"
+  "reference_sv": "module bitwise_xor8 (\n    input  logic [7:0] a,\n    input  logic [7:0] b,\n    output logic [7:0] y\n);\n    assign y = a ^ b;\nendmodule\n",
+  "hints": [
+    "XOR compares one bit position at a time. Nothing should carry from one bit into the next.",
+    "A single continuous assignment covers all eight bits at once.",
+    "If you use an always block, make sure it reacts to both a and b."
+  ]
 }

@@ -1,13 +1,16 @@
 {
   "slug": "shift_reg4",
-  "title": "4-bit Shift Register",
+  "number": 5,
+  "title": "Build a 4-bit serial-in shift register",
+  "domain": "vlsi",
+  "language": "sv",
   "difficulty": "medium",
   "kind": "sequential",
   "topics": [
     "Shift Registers",
     "Sequential Logic"
   ],
-  "statement_md": "Create a module named `shift_reg4`. It has `clk`, synchronous active-high `reset`, serial input `serial_in`, and a 4-bit output `q`. On every rising edge, if reset is 1, q becomes 0000. Otherwise shift toward the MSB: q[3] gets q[2], q[2] gets q[1], q[1] gets q[0], and q[0] gets serial_in.",
+  "statement_md": "Create a module named `shift_reg4` with `clk`, a synchronous active-high `reset`, a serial input `serial_in` and a 4-bit output `q`. On every rising edge, if `reset` is 1 then `q` becomes 0000. Otherwise `q` shifts towards the MSB: `q[3]` takes `q[2]`, `q[2]` takes `q[1]`, `q[1]` takes `q[0]` and `q[0]` takes `serial_in`.",
   "starter_code": "module shift_reg4 (\n    input  logic       clk,\n    input  logic       reset,\n    input  logic       serial_in,\n    output logic [3:0] q\n);\n    // Write your code here\nendmodule\n",
   "interface": {
     "module": "shift_reg4",
@@ -15,22 +18,26 @@
       {
         "name": "clk",
         "dir": "input",
-        "width": 1
+        "width": 1,
+        "desc": "Clock, rising edge active"
       },
       {
         "name": "reset",
         "dir": "input",
-        "width": 1
+        "width": 1,
+        "desc": "Synchronous reset, active high"
       },
       {
         "name": "serial_in",
         "dir": "input",
-        "width": 1
+        "width": 1,
+        "desc": "Bit shifted into q[0]"
       },
       {
         "name": "q",
         "dir": "output",
-        "width": 4
+        "width": 4,
+        "desc": "Register contents"
       }
     ]
   },
@@ -63,47 +70,58 @@
   "tests": [
     {
       "test_id": "T1",
-      "purpose": "Reset",
+      "purpose": "clears to 0000 on reset",
       "category": "reset",
       "bucket": "semantics",
-      "hint": "reset=1 at a rising edge must clear q to 0000."
+      "hint": "reset=1 at a rising edge must clear q to 0000.",
+      "visible": true
     },
     {
       "test_id": "T2",
-      "purpose": "Shift in 1 from 0000",
+      "purpose": "shifts a 1 into q[0]",
       "category": "logic",
       "bucket": "functional",
-      "hint": "The new bit enters at q[0]; check the intended next state is {q[2:0], serial_in}."
+      "hint": "The new bit enters at q[0]; check the intended next state is {q[2:0], serial_in}.",
+      "visible": true
     },
     {
       "test_id": "T3",
-      "purpose": "Build pattern",
+      "purpose": "builds a pattern over several edges",
       "category": "logic",
       "bucket": "functional",
-      "hint": "Shift several bits in a row and confirm the running pattern matches, not just the first shift."
+      "hint": "Shift several bits in a row and confirm the running pattern matches, not just the first shift.",
+      "visible": false
     },
     {
       "test_id": "T4",
-      "purpose": "Shift zeros",
+      "purpose": "pushes bits towards the MSB",
       "category": "logic",
       "bucket": "functional",
-      "hint": "Shifting a 0 in should push existing bits toward the MSB and drop the oldest bit."
+      "hint": "Shifting a 0 in should push existing bits toward the MSB and drop the oldest bit.",
+      "visible": false
     },
     {
       "test_id": "T5",
-      "purpose": "Oldest bit exits",
+      "purpose": "drops the oldest bit out of q[3]",
       "category": "logic",
       "bucket": "functional",
-      "hint": "After enough shifts, no original bit should remain \u2014 verify the earliest bit actually leaves at q[3]."
+      "hint": "After enough shifts no original bit should remain. Check that the earliest bit really leaves at q[3].",
+      "visible": false
     },
     {
       "test_id": "T6",
-      "purpose": "Synchronous reset timing",
+      "purpose": "waits for the edge to apply reset",
       "category": "timing",
       "bucket": "semantics",
-      "hint": "Toggling reset between clock edges must not change q until the next rising edge."
+      "hint": "Toggling reset between clock edges must not change q until the next rising edge.",
+      "visible": false
     }
   ],
-  "testbench_sv": "`timescale 1ns/1ps\nmodule tb;\n  reg clk, reset, serial_in;\n  wire [3:0] q;\n\n  shift_reg4 dut (.clk(clk), .reset(reset), .serial_in(serial_in), .q(q));\n\n  initial clk = 0;\n  always #5 clk = ~clk;\n\n  initial begin\n    #10000 $display(\"##TIMEOUT\");\n    $finish;\n  end\n\n  // Every input change happens only right after a settled \"#1\" following an\n  // edge, never bare against a bare @(posedge clk). Setting an input in the\n  // same simulation instant as the edge that samples it is a race \u2014 whether\n  // the DUT's always block sees the old or new value is simulator-defined,\n  // and earlier drafts of this testbench hit exactly that race.\n  initial begin\n    reset = 1; serial_in = 0;\n    @(posedge clk); #1;\n    if (q === 4'b0000) $display(\"##TEST T1 PASS exp=0000 got=%04b\", q);\n    else $display(\"##TEST T1 FAIL exp=0000 got=%04b\", q);\n\n    reset = 0; serial_in = 1;\n    @(posedge clk); #1;\n    if (q === 4'b0001) $display(\"##TEST T2 PASS exp=0001 got=%04b\", q);\n    else $display(\"##TEST T2 FAIL exp=0001 got=%04b\", q);\n\n    serial_in = 0;\n    @(posedge clk); #1;\n\n    serial_in = 1;\n    @(posedge clk); #1;\n\n    serial_in = 1;\n    @(posedge clk); #1;\n    if (q === 4'b1011) $display(\"##TEST T3 PASS exp=1011 got=%04b\", q);\n    else $display(\"##TEST T3 FAIL exp=1011 got=%04b\", q);\n\n    serial_in = 0;\n    @(posedge clk); #1;\n    if (q === 4'b0110) $display(\"##TEST T4 PASS exp=0110 got=%04b\", q);\n    else $display(\"##TEST T4 FAIL exp=0110 got=%04b\", q);\n\n    serial_in = 0;\n    repeat (4) @(posedge clk);\n    #1;\n    if (q === 4'b0000) $display(\"##TEST T5 PASS exp=0000 got=%04b\", q);\n    else $display(\"##TEST T5 FAIL exp=0000 got=%04b\", q);\n\n    serial_in = 1;\n    @(posedge clk); #1;\n\n    reset = 1;\n    #1;\n    if (q === 4'b0001) $display(\"##TEST T6 PASS exp=0001 got=%04b\", q);\n    else $display(\"##TEST T6 FAIL exp=0001 got=%04b\", q);\n    reset = 0;\n\n    $display(\"##DONE\");\n    $finish;\n  end\nendmodule\n",
-  "reference_sv": "module shift_reg4 (\n    input  logic       clk,\n    input  logic       reset,\n    input  logic       serial_in,\n    output logic [3:0] q\n);\n    always @(posedge clk) begin\n        if (reset)\n            q <= 4'b0000;\n        else\n            q <= {q[2:0], serial_in};\n    end\nendmodule\n"
+  "testbench_sv": "`timescale 1ns/1ps\nmodule tb;\n  reg clk, reset, serial_in;\n  wire [3:0] q;\n\n  shift_reg4 dut (.clk(clk), .reset(reset), .serial_in(serial_in), .q(q));\n\n  initial clk = 0;\n  always #5 clk = ~clk;\n\n  initial begin\n    #10000 $display(\"##TIMEOUT\");\n    $finish;\n  end\n\n  // Every input change happens only right after a settled \"#1\" following an\n  // edge, never bare against a bare @(posedge clk). Setting an input in the\n  // same simulation instant as the edge that samples it is a race: whether\n  // the DUT's always block sees the old or new value is simulator-defined,\n  // and earlier drafts of this testbench hit exactly that race.\n  initial begin\n    reset = 1; serial_in = 0;\n    @(posedge clk); #1;\n    if (q === 4'b0000) $display(\"##TEST T1 PASS exp=0000 got=%04b\", q);\n    else $display(\"##TEST T1 FAIL exp=0000 got=%04b\", q);\n\n    reset = 0; serial_in = 1;\n    @(posedge clk); #1;\n    if (q === 4'b0001) $display(\"##TEST T2 PASS exp=0001 got=%04b\", q);\n    else $display(\"##TEST T2 FAIL exp=0001 got=%04b\", q);\n\n    serial_in = 0;\n    @(posedge clk); #1;\n\n    serial_in = 1;\n    @(posedge clk); #1;\n\n    serial_in = 1;\n    @(posedge clk); #1;\n    if (q === 4'b1011) $display(\"##TEST T3 PASS exp=1011 got=%04b\", q);\n    else $display(\"##TEST T3 FAIL exp=1011 got=%04b\", q);\n\n    serial_in = 0;\n    @(posedge clk); #1;\n    if (q === 4'b0110) $display(\"##TEST T4 PASS exp=0110 got=%04b\", q);\n    else $display(\"##TEST T4 FAIL exp=0110 got=%04b\", q);\n\n    serial_in = 0;\n    repeat (4) @(posedge clk);\n    #1;\n    if (q === 4'b0000) $display(\"##TEST T5 PASS exp=0000 got=%04b\", q);\n    else $display(\"##TEST T5 FAIL exp=0000 got=%04b\", q);\n\n    serial_in = 1;\n    @(posedge clk); #1;\n\n    reset = 1;\n    #1;\n    if (q === 4'b0001) $display(\"##TEST T6 PASS exp=0001 got=%04b\", q);\n    else $display(\"##TEST T6 FAIL exp=0001 got=%04b\", q);\n    reset = 0;\n\n    $display(\"##DONE\");\n    $finish;\n  end\nendmodule\n",
+  "reference_sv": "module shift_reg4 (\n    input  logic       clk,\n    input  logic       reset,\n    input  logic       serial_in,\n    output logic [3:0] q\n);\n    always @(posedge clk) begin\n        if (reset)\n            q <= 4'b0000;\n        else\n            q <= {q[2:0], serial_in};\n    end\nendmodule\n",
+  "hints": [
+    "The next value of q is the old q shifted left by one, with serial_in in the lowest bit.",
+    "A concatenation such as {q[2:0], serial_in} describes the whole shift in one line.",
+    "Use non-blocking assignments so every bit moves on the same edge."
+  ]
 }

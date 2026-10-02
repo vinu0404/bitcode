@@ -1,6 +1,6 @@
 """End-to-end engine tests against the real iverilog/vvp sandbox.
 
-These require iverilog to be installed — they run inside the api Docker
+These require iverilog to be installed; they run inside the api Docker
 image (`docker compose run --rm api pytest app/engine/tests -v`), not on
 a bare host. `with_feedback=False` everywhere so these never depend on
 network access or an OpenAI key.
@@ -95,7 +95,7 @@ def test_self_inverting_output_is_x_not_a_hang():
     """A raw self-referencing NOT (`y = ~y`) is the naive way to picture an
     oscillating combinational loop, but 4-state simulation damps it: NOT
     of X is X, so it settles to X in one step instead of spinning the
-    simulator. That settling — not a hang — is what actually happens, and
+    simulator. That settling; not a hang; is what actually happens, and
     it's still a real defect (undefined outputs), just via a different
     detector than the CPU-timeout one below."""
     _, spec = _spec("bitwise_xor8")
@@ -116,11 +116,11 @@ def test_self_inverting_output_is_x_not_a_hang():
 def test_unbounded_loop_times_out():
     """`always @(*)` with a body that only ever reads/writes a variable
     private to the same process never actually triggers in this Icarus
-    build — its auto-sensitivity inference elides self-only variables, a
+    build; its auto-sensitivity inference elides self-only variables, a
     real quirk confirmed by hand before writing this test (a `count`
     incremented in such a loop stayed exactly 0). Reacting to an actual
     driven input (`always @(a)`) does trigger, and an unconditional
-    `while(1)` inside genuinely spins the simulator's CPU forever — no
+    `while(1)` inside genuinely spins the simulator's CPU forever; no
     #delay, no banned task, so static_check has nothing to reject. RLIMIT_CPU
     kills the vvp process well before the wall-clock subprocess timeout;
     sim.py must still report this as timed_out."""

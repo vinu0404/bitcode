@@ -1,13 +1,16 @@
 {
   "slug": "counter4",
-  "title": "Synchronous 4-bit Up Counter",
+  "number": 4,
+  "title": "Build a 4-bit counter with synchronous reset",
+  "domain": "vlsi",
+  "language": "sv",
   "difficulty": "medium",
   "kind": "sequential",
   "topics": [
     "Counters",
     "Sequential Logic"
   ],
-  "statement_md": "Create a module named `counter4`. On every rising edge of `clk`, if `reset` is 1, the count must become 0. Otherwise the 4-bit count increments by 1. Reset is synchronous and active-high. After 15, the counter wraps to 0.",
+  "statement_md": "Create a module named `counter4`. On every rising edge of `clk`, if `reset` is 1 the 4-bit `count` becomes 0; otherwise it increments by 1. Reset is synchronous and active-high. After 15 the counter wraps to 0.",
   "starter_code": "module counter4 (\n    input  logic       clk,\n    input  logic       reset,\n    output logic [3:0] count\n);\n    // Write your code here\nendmodule\n",
   "interface": {
     "module": "counter4",
@@ -15,17 +18,20 @@
       {
         "name": "clk",
         "dir": "input",
-        "width": 1
+        "width": 1,
+        "desc": "Clock, rising edge active"
       },
       {
         "name": "reset",
         "dir": "input",
-        "width": 1
+        "width": 1,
+        "desc": "Synchronous reset, active high"
       },
       {
         "name": "count",
         "dir": "output",
-        "width": 4
+        "width": 4,
+        "desc": "Current count, 0 to 15"
       }
     ]
   },
@@ -62,47 +68,58 @@
   "tests": [
     {
       "test_id": "T1",
-      "purpose": "Synchronous reset",
+      "purpose": "clears to 0 on reset",
       "category": "reset",
       "bucket": "semantics",
-      "hint": "reset must be applied inside the clocked always block, sampled at posedge clk."
+      "hint": "reset must be applied inside the clocked always block, sampled at posedge clk.",
+      "visible": true
     },
     {
       "test_id": "T2",
-      "purpose": "Reset does not act asynchronously",
+      "purpose": "ignores reset until the next edge",
       "category": "timing",
       "bucket": "semantics",
-      "hint": "The event control should list clk only \u2014 an async-reset design reacts before the next edge, which is wrong here."
+      "hint": "The event control should list clk only. An asynchronous reset reacts before the next edge, which is wrong here.",
+      "visible": false
     },
     {
       "test_id": "T3",
-      "purpose": "Increment",
+      "purpose": "counts up by one",
       "category": "logic",
       "bucket": "functional",
-      "hint": "Check count <= count + 1 on the non-reset path."
+      "hint": "Check count <= count + 1 on the non-reset path.",
+      "visible": true
     },
     {
       "test_id": "T4",
-      "purpose": "Multiple cycles",
+      "purpose": "advances once per clock edge",
       "category": "logic",
       "bucket": "functional",
-      "hint": "State must advance exactly once per clock edge, not per delta cycle."
+      "hint": "State must advance exactly once per clock edge, not per delta cycle.",
+      "visible": false
     },
     {
       "test_id": "T5",
-      "purpose": "Wraparound",
+      "purpose": "wraps from 15 to 0",
       "category": "logic",
       "bucket": "functional",
-      "hint": "A 4-bit register wraps from 15 to 0 for free on overflow \u2014 no explicit wrap logic is needed."
+      "hint": "A 4-bit register wraps from 15 to 0 for free on overflow. No explicit wrap logic is needed.",
+      "visible": false
     },
     {
       "test_id": "T6",
-      "purpose": "Reset priority",
+      "purpose": "gives reset priority over counting",
       "category": "reset",
       "bucket": "semantics",
-      "hint": "reset must take priority over incrementing when both conditions could apply at the same edge."
+      "hint": "reset must take priority over incrementing when both conditions could apply at the same edge.",
+      "visible": false
     }
   ],
   "testbench_sv": "`timescale 1ns/1ps\nmodule tb;\n  reg clk, reset;\n  wire [3:0] count;\n\n  counter4 dut (.clk(clk), .reset(reset), .count(count));\n\n  initial clk = 0;\n  always #5 clk = ~clk;\n\n  initial begin\n    #10000 $display(\"##TIMEOUT\");\n    $finish;\n  end\n\n  initial begin\n    reset = 1;\n    @(posedge clk); #1;\n    if (count === 4'd0) $display(\"##TEST T1 PASS exp=0 got=%0d\", count);\n    else $display(\"##TEST T1 FAIL exp=0 got=%0d\", count);\n\n    reset = 0;\n    @(posedge clk); #1;\n    if (count === 4'd1) $display(\"##TEST T3 PASS exp=1 got=%0d\", count);\n    else $display(\"##TEST T3 FAIL exp=1 got=%0d\", count);\n\n    reset = 1; #1;\n    if (count === 4'd1) $display(\"##TEST T2 PASS exp=1 got=%0d\", count);\n    else $display(\"##TEST T2 FAIL exp=1 got=%0d\", count);\n\n    @(posedge clk); #1;\n    if (count === 4'd0) $display(\"##TEST T6 PASS exp=0 got=%0d\", count);\n    else $display(\"##TEST T6 FAIL exp=0 got=%0d\", count);\n\n    reset = 0;\n    repeat (5) @(posedge clk); #1;\n    if (count === 4'd5) $display(\"##TEST T4 PASS exp=5 got=%0d\", count);\n    else $display(\"##TEST T4 FAIL exp=5 got=%0d\", count);\n\n    repeat (10) @(posedge clk);\n    @(posedge clk); #1;\n    if (count === 4'd0) $display(\"##TEST T5 PASS exp=0 got=%0d\", count);\n    else $display(\"##TEST T5 FAIL exp=0 got=%0d\", count);\n\n    $display(\"##DONE\");\n    $finish;\n  end\nendmodule\n",
-  "reference_sv": "module counter4 (\n    input  logic       clk,\n    input  logic       reset,\n    output logic [3:0] count\n);\n    always @(posedge clk) begin\n        if (reset)\n            count <= 4'd0;\n        else\n            count <= count + 4'd1;\n    end\nendmodule\n"
+  "reference_sv": "module counter4 (\n    input  logic       clk,\n    input  logic       reset,\n    output logic [3:0] count\n);\n    always @(posedge clk) begin\n        if (reset)\n            count <= 4'd0;\n        else\n            count <= count + 4'd1;\n    end\nendmodule\n",
+  "hints": [
+    "Everything happens on the rising edge, so one always_ff block on posedge clk is enough.",
+    "Check reset first inside that block so it wins over counting.",
+    "A 4-bit register wraps from 15 to 0 on its own. No extra logic is needed."
+  ]
 }

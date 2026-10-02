@@ -1,13 +1,16 @@
 {
   "slug": "mux4to1",
-  "title": "4-to-1 Multiplexer",
+  "number": 3,
+  "title": "Build a 4-to-1 multiplexer",
+  "domain": "vlsi",
+  "language": "sv",
   "difficulty": "easy",
   "kind": "combinational",
   "topics": [
     "Multiplexers",
     "Combinational Logic"
   ],
-  "statement_md": "Create a combinational module named `mux4to1`. It has four 1-bit data inputs `d0`..`d3`, a 2-bit select input `sel`, and one output `y`. `sel` chooses which input is forwarded to `y`.",
+  "statement_md": "Create a combinational module named `mux4to1` with four 1-bit data inputs `d0` to `d3`, a 2-bit select input `sel` and one output `y`. `sel` chooses which data input is forwarded to `y`.",
   "starter_code": "module mux4to1 (\n    input  logic d0, d1, d2, d3,\n    input  logic [1:0] sel,\n    output logic y\n);\n    // Write your code here\nendmodule\n",
   "interface": {
     "module": "mux4to1",
@@ -15,32 +18,38 @@
       {
         "name": "d0",
         "dir": "input",
-        "width": 1
+        "width": 1,
+        "desc": "Data input, chosen when sel is 0"
       },
       {
         "name": "d1",
         "dir": "input",
-        "width": 1
+        "width": 1,
+        "desc": "Data input, chosen when sel is 1"
       },
       {
         "name": "d2",
         "dir": "input",
-        "width": 1
+        "width": 1,
+        "desc": "Data input, chosen when sel is 2"
       },
       {
         "name": "d3",
         "dir": "input",
-        "width": 1
+        "width": 1,
+        "desc": "Data input, chosen when sel is 3"
       },
       {
         "name": "sel",
         "dir": "input",
-        "width": 2
+        "width": 2,
+        "desc": "Selects which input reaches y"
       },
       {
         "name": "y",
         "dir": "output",
-        "width": 1
+        "width": 1,
+        "desc": "The selected input"
       }
     ]
   },
@@ -73,47 +82,58 @@
   "tests": [
     {
       "test_id": "T1",
-      "purpose": "Select d0",
+      "purpose": "forwards d0 when sel is 0",
       "category": "logic",
       "bucket": "functional",
-      "hint": "sel=00 must route d0 to y."
+      "hint": "sel=00 must route d0 to y.",
+      "visible": true
     },
     {
       "test_id": "T2",
-      "purpose": "Select d1",
+      "purpose": "forwards d1 when sel is 1",
       "category": "logic",
       "bucket": "functional",
-      "hint": "sel=01 must route d1 to y."
+      "hint": "sel=01 must route d1 to y.",
+      "visible": true
     },
     {
       "test_id": "T3",
-      "purpose": "Select d2",
+      "purpose": "forwards d2 when sel is 2",
       "category": "logic",
       "bucket": "functional",
-      "hint": "sel=10 must route d2 to y."
+      "hint": "sel=10 must route d2 to y.",
+      "visible": false
     },
     {
       "test_id": "T4",
-      "purpose": "Select d3",
+      "purpose": "forwards d3 when sel is 3",
       "category": "logic",
       "bucket": "functional",
-      "hint": "sel=11 must route d3 to y \u2014 verify this is not swapped with sel=10."
+      "hint": "sel=11 must route d3 to y. Check it is not swapped with sel=10.",
+      "visible": false
     },
     {
       "test_id": "T5",
-      "purpose": "All zeros",
+      "purpose": "outputs 0 when every input is 0",
       "category": "logic",
       "bucket": "functional",
-      "hint": "If every data input is 0, y must be 0 regardless of sel."
+      "hint": "If every data input is 0, y must be 0 regardless of sel.",
+      "visible": false
     },
     {
       "test_id": "T6",
-      "purpose": "All ones",
+      "purpose": "outputs 1 when every input is 1",
       "category": "logic",
       "bucket": "functional",
-      "hint": "If every data input is 1, y must be 1 regardless of sel."
+      "hint": "If every data input is 1, y must be 1 regardless of sel.",
+      "visible": false
     }
   ],
   "testbench_sv": "`timescale 1ns/1ps\nmodule tb;\n  reg d0, d1, d2, d3;\n  reg [1:0] sel;\n  wire y;\n\n  mux4to1 dut (.d0(d0), .d1(d1), .d2(d2), .d3(d3), .sel(sel), .y(y));\n\n  initial begin\n    #10000 $display(\"##TIMEOUT\");\n    $finish;\n  end\n\n  initial begin\n    d0=1'b0; d1=1'b1; d2=1'b0; d3=1'b1; sel=2'b00; #1;\n    if (y===1'b0) $display(\"##TEST T1 PASS exp=0 got=%0d\", y); else $display(\"##TEST T1 FAIL exp=0 got=%0d\", y);\n\n    sel=2'b01; #1;\n    if (y===1'b1) $display(\"##TEST T2 PASS exp=1 got=%0d\", y); else $display(\"##TEST T2 FAIL exp=1 got=%0d\", y);\n\n    d0=1'b1; d1=1'b0; d2=1'b1; d3=1'b0; sel=2'b10; #1;\n    if (y===1'b1) $display(\"##TEST T3 PASS exp=1 got=%0d\", y); else $display(\"##TEST T3 FAIL exp=1 got=%0d\", y);\n\n    sel=2'b11; #1;\n    if (y===1'b0) $display(\"##TEST T4 PASS exp=0 got=%0d\", y); else $display(\"##TEST T4 FAIL exp=0 got=%0d\", y);\n\n    d0=1'b0; d1=1'b0; d2=1'b0; d3=1'b0;\n    sel=2'b00; #1;\n    if (y===1'b0) $display(\"##TEST T5 PASS exp=0 got=%0d\", y); else $display(\"##TEST T5 FAIL exp=0 got=%0d\", y);\n    sel=2'b10; #1;\n    if (y!==1'b0) $display(\"##TEST T5 FAIL exp=0 got=%0d\", y);\n\n    d0=1'b1; d1=1'b1; d2=1'b1; d3=1'b1;\n    sel=2'b01; #1;\n    if (y===1'b1) $display(\"##TEST T6 PASS exp=1 got=%0d\", y); else $display(\"##TEST T6 FAIL exp=1 got=%0d\", y);\n    sel=2'b11; #1;\n    if (y!==1'b1) $display(\"##TEST T6 FAIL exp=1 got=%0d\", y);\n\n    $display(\"##DONE\");\n    $finish;\n  end\nendmodule\n",
-  "reference_sv": "module mux4to1 (\n    input  logic d0, d1, d2, d3,\n    input  logic [1:0] sel,\n    output logic y\n);\n    always @(*) begin\n        case (sel)\n            2'b00: y = d0;\n            2'b01: y = d1;\n            2'b10: y = d2;\n            2'b11: y = d3;\n        endcase\n    end\nendmodule\n"
+  "reference_sv": "module mux4to1 (\n    input  logic d0, d1, d2, d3,\n    input  logic [1:0] sel,\n    output logic y\n);\n    always @(*) begin\n        case (sel)\n            2'b00: y = d0;\n            2'b01: y = d1;\n            2'b10: y = d2;\n            2'b11: y = d3;\n        endcase\n    end\nendmodule\n",
+  "hints": [
+    "Treat sel as a number from 0 to 3 that picks one input.",
+    "A case statement or a nested conditional both work. Cover all four values.",
+    "Check that sel=2 and sel=3 are not swapped."
+  ]
 }

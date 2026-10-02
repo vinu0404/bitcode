@@ -22,7 +22,7 @@ def get_current_user(authorization: str | None = Header(default=None), db: Sessi
         raise UnauthorizedError("Invalid access token.")
 
     if payload.get("type") != "access":
-        raise UnauthorizedError("Wrong token type — expected an access token.")
+        raise UnauthorizedError("Use an access token here, not a refresh token.")
 
     user = db.get(User, uuid.UUID(payload["sub"]))
     if user is None or not user.is_active:

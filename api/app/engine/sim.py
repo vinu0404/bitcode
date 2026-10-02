@@ -1,4 +1,4 @@
-"""Stages 2 & 3 — compile with iverilog, simulate with vvp, sandboxed.
+"""Stages 2 & 3; compile with iverilog, simulate with vvp, sandboxed.
 
 Everything that touches student code as an executable goes through this
 module: subprocess only, rlimits on CPU/memory/file-size, a hard wall
@@ -21,7 +21,11 @@ from pathlib import Path
 from app.config import settings
 from app.engine.types import CompileResult, TestOutcome, VecComparison
 
-_TEST_RE = re.compile(r"^##TEST\s+(\S+)\s+(PASS|FAIL)(?:\s+exp=(\S+)\s+got=(\S+))?\s*$", re.MULTILINE)
+# The optional `##AT <t>` prefix is added by `instrument_testbench` on Run,
+# so each outcome carries the simulation time its check happened at.
+_TEST_RE = re.compile(
+    r"^(?:##AT\s+(\d+)\s+)?##TEST\s+(\S+)\s+(PASS|FAIL)(?:\s+exp=(\S+)\s+got=(\S+))?\s*$", re.MULTILINE
+)
 _DONE_RE = re.compile(r"^##DONE\s*$", re.MULTILINE)
 _TIMEOUT_RE = re.compile(r"^##TIMEOUT\s*$", re.MULTILINE)
 _X_OUTPUT_RE = re.compile(r"[xXzZ]{2,}")  # crude undefined-output smell in raw stdout
@@ -71,9 +75,10 @@ class SandboxRun:
     def compile(self) -> CompileResult:
         assert self.job_dir is not None
         out_path = self.job_dir / "sim.vvp"
+        started = time.monotonic()
         try:
             proc = subprocess.run(
-                [settings.iverilog_bin, "-g2012", "-Wall", "-o", str(out_path), *sorted(self.files.keys())],
+                [settings.iverilog_bin, "-g2012", "-Wall", "-Wno-timescale", "-o", str(out_path), *sorted(self.files.keys())],
                 cwd=self.job_dir,
                 timeout=settings.sim_compile_timeout,
                 capture_output=True,
@@ -88,6 +93,7 @@ class SandboxRun:
             ok=proc.returncode == 0 and out_path.exists(),
             errors=_truncate(proc.stderr),
             warnings=_truncate(proc.stdout),
+            duration_ms=int((time.monotonic() - started) * 1000),
         )
 
     def run(self) -> tuple[bool, str, int]:
@@ -97,7 +103,7 @@ class SandboxRun:
         below (a process that's merely slow), and RLIMIT_CPU/RLIMIT_AS
         killing the process with a signal well before that wall clock is
         reached (a zero-delay combinational loop spins pure CPU without
-        ever blocking, so it dies by SIGXCPU, not by timing out — but it
+        ever blocking, so it dies by SIGXCPU, not by timing out; but it
         must be reported as uncertain either way)."""
         assert self.job_dir is not None
         vvp_path = self.job_dir / "sim.vvp"
@@ -128,7 +134,7 @@ def compile_and_run_files(
 
     `vcd_text` is only ever populated when the caller passes capture_vcd=True
     *and* the testbench actually dumped one (only `/run`'s generated
-    testbenches do — see tbgen.py). `/submit` never requests it: a waveform
+    testbenches do; see tbgen.py). `/submit` never requests it: a waveform
     of a hidden test would hand the student its exact expected values,
     exactly what the anti-cheat design in the spec forbids."""
     with _SIM_SEMAPHORE:
@@ -151,22 +157,27 @@ def compile_and_run_files(
 
 def compile_and_run(student_sv: str, testbench_sv: str) -> tuple[CompileResult, bool, bool, str, int, str | None]:
     """The normal two-file grading case: student module + hidden testbench.
-    Never captures a waveform — see compile_and_run_files."""
+    Never captures a waveform; see compile_and_run_files."""
     return compile_and_run_files({"student.sv": student_sv, "tb.sv": testbench_sv})
 
 
-def parse_tests(stdout: str, declared: dict[str, tuple[str, str]]) -> tuple[list[TestOutcome], bool]:
+def parse_tests(
+    stdout: str, declared: dict[str, tuple[str, str]], ns_per_unit: float = 1.0
+) -> tuple[list[TestOutcome], bool]:
     """Parse ##TEST lines. `declared` maps test_id -> (category, purpose).
 
     Returns (outcomes, saw_done). Any declared test_id with no matching
-    ##TEST line comes back as UNCERTAIN — this is what happens when a run
+    ##TEST line comes back as UNCERTAIN; this is what happens when a run
     times out partway through.
     """
     seen: dict[str, TestOutcome] = {}
     for m in _TEST_RE.finditer(stdout):
-        tid, status, exp, got = m.group(1), m.group(2), m.group(3), m.group(4)
+        at_raw, tid, status, exp, got = m.groups()
         category, purpose = declared.get(tid, ("", ""))
-        seen[tid] = TestOutcome(id=tid, status=status, category=category, purpose=purpose, exp=exp, got=got)
+        at_ns = int(at_raw) * ns_per_unit if at_raw is not None else None
+        seen[tid] = TestOutcome(
+            id=tid, status=status, category=category, purpose=purpose, exp=exp, got=got, at_ns=at_ns
+        )
 
     outcomes: list[TestOutcome] = []
     for tid, (category, purpose) in declared.items():
@@ -177,6 +188,70 @@ def parse_tests(stdout: str, declared: dict[str, tuple[str, str]]) -> tuple[list
 
     saw_done = bool(_DONE_RE.search(stdout))
     return outcomes, saw_done
+
+
+# ── Run instrumentation ────────────────────────────────────────────────
+# Run executes the problem's real testbench, then shows only the visible
+# tests. Two small rewrites make that possible without touching the stored
+# testbench: every `##TEST` line gets the simulation time it was printed
+# at, and the testbench module dumps its own top-level signals to a VCD.
+
+_DISPLAY_TEST_RE = re.compile(r'\$display\(\s*"##TEST')
+_TIMESCALE_RE = re.compile(r"`timescale\s+(\d+)\s*(fs|ps|ns|us|ms|s)\b")
+_MODULE_RE = re.compile(r"\bmodule\s+(\w+)")
+_ENDMODULE_RE = re.compile(r"\bendmodule\b")
+_NS_PER_UNIT = {"fs": 1e-6, "ps": 1e-3, "ns": 1.0, "us": 1e3, "ms": 1e6, "s": 1e9}
+
+
+def testbench_ns_per_unit(testbench_sv: str) -> float:
+    """`$time` counts in the testbench module's own time unit. Icarus
+    defaults to 1s when no `timescale is given."""
+    m = _TIMESCALE_RE.search(testbench_sv)
+    if not m:
+        return 1e9
+    return int(m.group(1)) * _NS_PER_UNIT[m.group(2)]
+
+
+def testbench_test_order(testbench_sv: str) -> list[str]:
+    """Test ids in the order their first `##TEST <id>` appears in the
+    source. For the straight-line `initial` blocks every testbench uses,
+    that is also execution order; the validation gate double-checks it
+    against the timestamps of a real run."""
+    order: list[str] = []
+    for m in re.finditer(r"##TEST\s+(\w+)", testbench_sv):
+        if m.group(1) not in order:
+            order.append(m.group(1))
+    return order
+
+
+def instrument_testbench(testbench_sv: str, top_module: str) -> str:
+    """Prefix each `##TEST` display with `##AT <$time>` and add a VCD dump
+    of `top_module`'s own signals (depth 1, so nothing inside the DUT)."""
+    out = _DISPLAY_TEST_RE.sub('$display("##AT %0d ##TEST', testbench_sv)
+    # Every rewritten format string gained one `%0d`, so it needs `$time` as
+    # its first argument: the closing quote of that string is followed by
+    # either `,` (more args) or `)`.
+    out = re.sub(r'(\$display\("##AT %0d ##TEST[^"]*")', r"\1, $time", out)
+
+    start = None
+    for m in _MODULE_RE.finditer(out):
+        if m.group(1) == top_module:
+            start = m.end()
+            break
+    if start is None:
+        return out
+    end = _ENDMODULE_RE.search(out, start)
+    if end is None:
+        return out
+    dump = f'\n  initial begin\n    $dumpfile("dump.vcd");\n    $dumpvars(1, {top_module});\n  end\n'
+    return out[: end.start()] + dump + out[end.start() :]
+
+
+def testbench_top_module(testbench_sv: str, dut_module: str) -> str | None:
+    for m in _MODULE_RE.finditer(testbench_sv):
+        if m.group(1) != dut_module:
+            return m.group(1)
+    return None
 
 
 def saw_timeout_marker(stdout: str) -> bool:

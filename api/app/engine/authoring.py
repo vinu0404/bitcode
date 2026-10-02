@@ -1,9 +1,9 @@
 """AI is used to help an admin AUTHOR a new problem's testbench and
-reference solution — never to grade one. This is the "Draft with AI"
+reference solution; never to grade one. This is the "Draft with AI"
 button in step 4 of the admin wizard (design doc §7): a starting point the
 admin reviews, edits, and must pass through the validation gate before
 publishing. If this call fails for any reason, the admin just writes the
-testbench by hand — nothing downstream depends on this succeeding.
+testbench by hand; nothing downstream depends on this succeeding.
 """
 
 from __future__ import annotations
@@ -34,7 +34,7 @@ SYSTEM_PROMPT = (
     "and `$finish;` at the end, plus a `#10000 $display(\"##TIMEOUT\"); $finish;` guard in a "
     "separate initial block. Use only the exact test ids given. Every input change to a "
     "sequential DUT must happen safely mid-cycle (right after `@(posedge clk); #1;`), never in "
-    "the same instant as the edge that samples it — that is a race condition. The reference "
+    "the same instant as the edge that samples it; that is a race condition. The reference "
     "solution must be a correct, idiomatic implementation with the exact module name and ports "
     "given. This is a first DRAFT for a human reviewer, not a final answer."
 )

@@ -6,9 +6,13 @@ class AppError(Exception):
     status_code = 400
     code = "app_error"
 
-    def __init__(self, message: str, status_code: int | None = None, code: str | None = None) -> None:
+    def __init__(
+        self, message: str, status_code: int | None = None, code: str | None = None, retry_after: int | None = None
+    ) -> None:
         super().__init__(message)
         self.message = message
+        # Seconds until the request may be retried; sent as Retry-After too.
+        self.retry_after = retry_after
         if status_code is not None:
             self.status_code = status_code
         if code is not None:
@@ -43,4 +47,9 @@ class ValidationFailedError(AppError):
 def register_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppError)
     async def _handle_app_error(_request: Request, exc: AppError) -> JSONResponse:
-        return JSONResponse(status_code=exc.status_code, content={"code": exc.code, "message": exc.message})
+        content: dict = {"code": exc.code, "message": exc.message}
+        headers = None
+        if exc.retry_after is not None:
+            content["retry_after"] = exc.retry_after
+            headers = {"Retry-After": str(exc.retry_after)}
+        return JSONResponse(status_code=exc.status_code, content=content, headers=headers)

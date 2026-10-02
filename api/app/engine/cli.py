@@ -1,4 +1,4 @@
-"""Standalone entry point for the grading engine — no database, no HTTP.
+"""Standalone entry point for the grading engine; no database, no HTTP.
 
     python -m app.engine.cli grade api/app/seed/problems/counter4.json my_solution.sv
 

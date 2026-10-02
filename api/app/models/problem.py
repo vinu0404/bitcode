@@ -10,7 +10,7 @@ from app.db import Base
 
 # Many-to-many: a problem can carry more than one topic (e.g. counter4 is
 # both "Sequential Logic" and "Counters"), and a topic spans many problems
-# — the LeetCode-style bubble filter on the student dashboard reads off
+#; the LeetCode-style bubble filter on the student dashboard reads off
 # this table, not off `problems.kind` (which stays a structural fact about
 # the circuit, not a study-taxonomy label).
 problem_topics = Table(
@@ -38,7 +38,11 @@ class Problem(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     slug: Mapped[str] = mapped_column(String, unique=True, nullable=False, index=True)
+    number: Mapped[int] = mapped_column(Integer, unique=True, nullable=False)  # shown zero-padded: 0042
     title: Mapped[str] = mapped_column(String, nullable=False)
+    domain: Mapped[str] = mapped_column(String, nullable=False, default="vlsi")  # vlsi | embedded | communication | others
+    language: Mapped[str] = mapped_column(String, nullable=False, default="sv")  # sv | v
+    hints: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     difficulty: Mapped[str] = mapped_column(String, nullable=False)  # easy | medium | hard
     kind: Mapped[ProblemKind] = mapped_column(Enum(ProblemKind, name="problem_kind"), nullable=False)
     statement_md: Mapped[str] = mapped_column(Text, nullable=False)
@@ -62,7 +66,7 @@ class Problem(Base):
 
 
 class Topic(Base):
-    """A study-taxonomy label ('Arithmetic', 'Counters', ...) — the bubble
+    """A study-taxonomy label ('Arithmetic', 'Counters', ...); the bubble
     filter chips on the student dashboard. Created on the fly from the
     admin wizard (find-or-create by name), so adding problem #6 in a new
     area never requires a separate "manage topics" step first."""
@@ -105,6 +109,7 @@ class ProblemTest(Base):
     category: Mapped[str] = mapped_column(String, nullable=False)  # reset|width|logic|timing|interface
     hint: Mapped[str] = mapped_column(Text, nullable=False)
     bucket: Mapped[str] = mapped_column(String, nullable=False)  # interface|functional|semantics
+    visible: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     order_index: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     problem: Mapped["Problem"] = relationship(back_populates="tests")

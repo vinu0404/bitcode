@@ -7,7 +7,7 @@ from sqlalchemy import text
 from app.config import settings
 from app.db import SessionLocal
 from app.errors import register_error_handlers
-from app.routers import admin, auth, me, problems, submissions
+from app.routers import admin, auth, me, problems, public, submissions
 
 app = FastAPI(title="BitCode Grader", version="1.0.0")
 
@@ -26,17 +26,18 @@ app.include_router(problems.router)
 app.include_router(submissions.router)
 app.include_router(admin.router)
 app.include_router(me.router)
+app.include_router(public.router)
 
 
 @app.get("/health")
 def health() -> dict:
-    """Liveness — the process is up. No dependency checks here."""
+    """Liveness; the process is up. No dependency checks here."""
     return {"status": "ok"}
 
 
 @app.get("/ready")
 def ready() -> dict:
-    """Readiness — the two things grading actually needs: the database,
+    """Readiness; the two things grading actually needs: the database,
     and iverilog. HF Spaces / a load balancer should gate traffic on this,
     not /health."""
     checks: dict[str, str] = {}

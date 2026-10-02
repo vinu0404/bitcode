@@ -1,6 +1,6 @@
 """Parses the VCD file iverilog dumps for `/run` (see tbgen.py's
 `$dumpfile`/`$dumpvars`) into the compact JSON-able shape the frontend's
-waveform viewer renders directly — no VCD grammar needed in the browser.
+waveform viewer renders directly; no VCD grammar needed in the browser.
 
 Scoped to iverilog's own dialect, not general VCD: `$var wire <width> <id>
 <name> [<range>] $end` declarations, then `#<time>` markers interleaved
@@ -24,8 +24,8 @@ _TIMESCALE_VALUE_RE = re.compile(r"^\s*(\d+)\s*(fs|ps|ns|us|ms|s)\s*$")
 # Every testbench this app generates declares `\`timescale 1ns/1ps` (see
 # tbgen.py), so raw VCD ticks always come out in picoseconds. Rather than
 # hardcode that, read it back from the VCD's own $timescale directive and
-# convert to nanoseconds for display — the unit a clock period is normally
-# reasoned about in — so the frontend never needs unit math.
+# convert to nanoseconds for display; the unit a clock period is normally
+# reasoned about in; so the frontend never needs unit math.
 _NS_PER_UNIT = {"fs": 1e-6, "ps": 1e-3, "ns": 1, "us": 1e3, "ms": 1e6, "s": 1e9}
 
 
@@ -54,7 +54,7 @@ def parse_vcd(text: str) -> Waveform | None:
                 continue
             if line.startswith("$timescale"):
                 # Either `$timescale 1ps $end` on one line, or the value on
-                # the next line — iverilog emits the latter.
+                # the next line; iverilog emits the latter.
                 m = re.match(r"^\$timescale\s+(\d+)\s*(fs|ps|ns|us|ms|s)\s*\$end", line)
                 if m:
                     magnitude, unit = int(m.group(1)), m.group(2)
@@ -69,7 +69,7 @@ def parse_vcd(text: str) -> Waveform | None:
             if m:
                 _kind, width_s, sig_id, name = m.groups()
                 # A vector's $var line carries a trailing "[msb:lsb]" token
-                # before $end — not part of the signal's name.
+                # before $end; not part of the signal's name.
                 sig = id_to_signal.get(sig_id)
                 if sig is None:
                     sig = WaveSignal(name=name, width=int(width_s), changes=[])
