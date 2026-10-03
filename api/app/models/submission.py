@@ -42,6 +42,7 @@ class Result(Base):
         UUID(as_uuid=True), ForeignKey("submissions.id", ondelete="CASCADE"), unique=True, nullable=False
     )
     verdict: Mapped[Verdict] = mapped_column(Enum(Verdict, name="verdict_t"), nullable=False)
+    verdict_word: Mapped[str | None] = mapped_column(String, nullable=True)  # ACCEPTED | WRONG ANSWER | ...
     score: Mapped[int | None] = mapped_column(Integer, nullable=True)
     score_breakdown: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     passed: Mapped[int | None] = mapped_column(Integer, nullable=True)

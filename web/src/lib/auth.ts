@@ -30,7 +30,7 @@ export function isLoggedIn(): boolean {
 }
 
 /**
- * `isLoggedIn()` reads localStorage, which doesn't exist during SSR — the
+ * `isLoggedIn()` reads localStorage, which doesn't exist during SSR; the
  * server always renders as logged out, but the client's first render can
  * see a real token immediately, and React's hydration requires the first
  * client render to match the server exactly. Calling `isLoggedIn()`
@@ -39,7 +39,7 @@ export function isLoggedIn(): boolean {
  * hydration-mismatch bug this hook exists to avoid.
  *
  * Returns `null` until mounted (render a loading state for this), then
- * `true`/`false` for the real, client-only answer — a plain boolean can't
+ * `true`/`false` for the real, client-only answer; a plain boolean can't
  * tell "not checked yet" apart from "checked, logged out".
  */
 export function useAuthReady(): boolean | null {

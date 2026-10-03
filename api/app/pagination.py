@@ -1,6 +1,6 @@
 """Shared offset/limit pagination.
 
-Offset/limit, not keyset/cursor — deliberately. Cursor pagination earns its
+Offset/limit, not keyset/cursor; deliberately. Cursor pagination earns its
 complexity on a high-churn, insert-heavy feed where "page 2" can shift
 under a reader between requests (a social timeline, a log stream). The
 problem catalog is the opposite shape: small, admin-curated, ordered by an

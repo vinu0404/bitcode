@@ -1,12 +1,12 @@
 """Generate a comparison testbench from a problem's port list plus vectors
-the student typed in — powers `POST /submissions/run` (tier 1 custom tests,
+the student typed in; powers `POST /submissions/run` (tier 1 custom tests,
 see the design doc). One generator serves every problem; adding problem #6
 adds no generator code because everything problem-specific comes from
 `ProblemSpec.ports`, not from a per-problem template.
 
 The student's module and `reference.sv` are compiled into the SAME unit,
 so the reference module is textually renamed first (`_rename_module`) to
-avoid a duplicate-module-name error — both declare the same interface by
+avoid a duplicate-module-name error; both declare the same interface by
 construction, which is exactly what the admin validation gate checks.
 """
 
@@ -29,7 +29,7 @@ def rename_module(source: str, old_name: str, new_name: str) -> str:
 
 def to_verilog_literal(width: int, raw: str) -> str:
     """Accept 0x../0b../decimal or a full Verilog literal, normalize to
-    `<width>'h<hex>`. Raises ValueError on anything else — never trust
+    `<width>'h<hex>`. Raises ValueError on anything else; never trust
     student-supplied vector text as raw source text."""
     raw = raw.strip()
     if _LITERAL_RE.match(raw):

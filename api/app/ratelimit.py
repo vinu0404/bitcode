@@ -1,6 +1,6 @@
 """In-process sliding-window rate limiter, per user per endpoint class.
 
-No Redis in V1 (see plan) — a single-process API on a free-tier host has
+No Redis in V1 (see plan); a single-process API on a free-tier host has
 no need for a distributed limiter, and this resets cleanly on every
 restart, which is the right failure mode here.
 """
@@ -33,7 +33,8 @@ def _check(bucket: str, user_id: UUID, limit: int) -> None:
         recent = [t for t in _hits[key] if now - t < _WINDOW_SECONDS]
         if len(recent) >= limit:
             _hits[key] = recent
-            raise RateLimitedError(f"Too many requests — limit is {limit} per minute.")
+            wait = max(1, int(_WINDOW_SECONDS - (now - min(recent))) + 1)
+            raise RateLimitedError(f"That is {limit} in a minute. Try again in {wait}s.", retry_after=wait)
         recent.append(now)
         _hits[key] = recent
 

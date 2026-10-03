@@ -5,57 +5,41 @@ import { useEffect, useState } from "react";
 const KEY = "bitcode-theme";
 const CHANGE_EVENT = "bitcode-theme-change";
 
-export type Theme = "light" | "dark";
-
-function storedChoice(): Theme | null {
-  if (typeof window === "undefined") return null;
-  const v = localStorage.getItem(KEY);
-  return v === "light" || v === "dark" ? v : null;
-}
-
-function systemTheme(): Theme {
-  if (typeof window === "undefined") return "dark";
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-}
+// Ink is the product's default, whatever the OS says; paper is a choice.
+export type Theme = "ink" | "paper";
 
 export function resolveTheme(): Theme {
-  return storedChoice() ?? systemTheme();
+  if (typeof window === "undefined") return "ink";
+  try {
+    return localStorage.getItem(KEY) === "paper" ? "paper" : "ink";
+  } catch {
+    return "ink";
+  }
 }
 
 export function setTheme(theme: Theme): void {
-  document.documentElement.setAttribute("data-theme", theme);
-  localStorage.setItem(KEY, theme);
+  if (theme === "paper") document.documentElement.setAttribute("data-theme", "paper");
+  else document.documentElement.removeAttribute("data-theme");
+  try {
+    localStorage.setItem(KEY, theme);
+  } catch {
+    /* private mode: the choice just will not persist */
+  }
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 
-/** Current resolved theme, reactive to both an explicit toggle and a live
- * OS-level preference change (for anyone who hasn't overridden it yet).
+/** Current theme for JS-rendered UI (Monaco theme, toggle icon).
  *
- * The initial state is a fixed literal, deliberately NOT resolveTheme() —
- * calling it as a lazy initializer reads `window` during the client's
- * first render (which happens before hydration reconciles against the
- * server-rendered HTML), while the server had no `window` and can only
- * guess. Two different first-paint values on server vs. client is exactly
- * a React hydration mismatch. Matching the server's fixed guess here and
- * correcting to the real value in an effect (which never runs during SSR
- * and only runs client-side *after* hydration) avoids that by construction
- * — the theme-dependent CSS itself doesn't have this problem, since the
- * blocking <script> in layout.tsx's <head> stamps `data-theme` before any
- * paint; this hook only drives JS-rendered UI like the toggle's icon. */
+ * Starts at the fixed server value and corrects in an effect, so the first
+ * client render matches the server HTML. The CSS itself is already right on
+ * first paint: the blocking script in layout.tsx stamps `data-theme`. */
 export function useTheme(): Theme {
-  const [theme, setThemeState] = useState<Theme>("dark");
-
+  const [theme, setThemeState] = useState<Theme>("ink");
   useEffect(() => {
     const update = () => setThemeState(resolveTheme());
     update();
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    mq.addEventListener("change", update);
     window.addEventListener(CHANGE_EVENT, update);
-    return () => {
-      mq.removeEventListener("change", update);
-      window.removeEventListener(CHANGE_EVENT, update);
-    };
+    return () => window.removeEventListener(CHANGE_EVENT, update);
   }, []);
-
   return theme;
 }

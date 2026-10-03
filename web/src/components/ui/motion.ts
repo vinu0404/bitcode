@@ -1,21 +1,16 @@
-// Shared animation variants — one vocabulary of motion across the app so
-// every list/card/panel enters the same way (Jakob's Law applied to the
-// app's own internal consistency, not just external conventions).
+// Shared motion vocabulary, matching the CSS easing tokens in globals.css.
 import type { Variants } from "framer-motion";
 
+export const EXPO_OUT = [0.16, 1, 0.3, 1] as const;
+export const SPRING = [0.34, 1.56, 0.64, 1] as const;
+export const IN_OUT = [0.65, 0, 0.35, 1] as const;
+
 export const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 10 },
-  show: { opacity: 1, y: 0 },
+  hidden: { opacity: 0, y: 8 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: EXPO_OUT } },
 };
 
 export const staggerContainer: Variants = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.045, delayChildren: 0.02 } },
+  show: { transition: { staggerChildren: 0.04 } },
 };
-
-export const scaleIn: Variants = {
-  hidden: { opacity: 0, scale: 0.97 },
-  show: { opacity: 1, scale: 1 },
-};
-
-export const springy = { type: "spring" as const, stiffness: 400, damping: 32 };

@@ -1,127 +1,166 @@
 "use client";
 
-import Editor, { BeforeMount } from "@monaco-editor/react";
+import Editor, { type BeforeMount, type OnMount } from "@monaco-editor/react";
 import { VERILOG_LANGUAGE_ID, verilogLanguageConfig, verilogMonarchTokens } from "@/lib/verilog-monarch";
 import { useTheme } from "@/lib/theme";
+
+export type MonacoEditor = Parameters<OnMount>[0];
+export type Monaco = Parameters<OnMount>[1];
 
 interface Props {
   value: string;
   onChange: (value: string) => void;
   height?: string;
+  onMount?: OnMount;
+  readOnly?: boolean;
+  /** Draw the bordered frame used outside the workspace (admin). */
+  framed?: boolean;
 }
 
-const DARK_THEME_ID = "bitcode-dark";
-const LIGHT_THEME_ID = "bitcode-light";
+const INK_THEME = "bitcode-ink";
+const PAPER_THEME = "bitcode-paper";
 
-// Registering themes in onMount is too late — @monaco-editor/react applies
-// the `theme` prop while creating the editor, before onMount ever fires,
-// so an unregistered theme silently falls back to Monaco's default light
-// "vs". beforeMount runs first, so both themes exist by the time either
-// is needed — and both are `inherit: false` (fully self-contained): the
-// Monarch grammar emits a distinct token per keyword ("keyword.module.sv",
-// not a shared "keyword.sv" — confirmed via monaco.editor.tokenize at
-// runtime), and inheriting vs-dark/vs pulls in built-in rules for some of
-// those exact scope names that win over ours regardless of rule order.
+// Themes are registered in beforeMount: @monaco-editor/react applies the
+// `theme` prop while creating the editor, before onMount fires, so a theme
+// registered later silently falls back to Monaco's "vs". Both themes are
+// `inherit: false`, so no built-in rule can outrank ours.
 const handleBeforeMount: BeforeMount = (monaco) => {
-  const languages = monaco.languages.getLanguages();
-  if (!languages.some((l) => l.id === VERILOG_LANGUAGE_ID)) {
+  if (!monaco.languages.getLanguages().some((l: { id: string }) => l.id === VERILOG_LANGUAGE_ID)) {
     monaco.languages.register({ id: VERILOG_LANGUAGE_ID });
     monaco.languages.setLanguageConfiguration(VERILOG_LANGUAGE_ID, verilogLanguageConfig);
-    monaco.languages.setMonarchTokensProvider(VERILOG_LANGUAGE_ID, verilogMonarchTokens as any);
+    monaco.languages.setMonarchTokensProvider(VERILOG_LANGUAGE_ID, verilogMonarchTokens as never);
   }
 
-  monaco.editor.defineTheme(DARK_THEME_ID, {
+  monaco.editor.defineTheme(INK_THEME, {
     base: "vs-dark",
     inherit: false,
     rules: [
-      { token: "", foreground: "ebeef3", background: "12161d" },
-      { token: "keyword", foreground: "6ba0ff", fontStyle: "bold" },
-      { token: "predefined", foreground: "22d3ee" },
-      { token: "comment", foreground: "5b6472", fontStyle: "italic" },
-      { token: "string", foreground: "34d399" },
-      { token: "number", foreground: "fbbf24" },
-      { token: "number.hex", foreground: "fbbf24" },
-      { token: "identifier", foreground: "ebeef3" },
-      { token: "delimiter", foreground: "8d96a6" },
-      { token: "operator", foreground: "8d96a6" },
+      { token: "", foreground: "F2EFE8", background: "080A14" },
+      { token: "keyword", foreground: "D690FF" },
+      { token: "keyword.direction", foreground: "7AA5FF", fontStyle: "bold" },
+      { token: "type", foreground: "7AA5FF" },
+      { token: "number", foreground: "FFB347" },
+      { token: "string", foreground: "2EE0C6" },
+      { token: "predefined", foreground: "FF7A5C" },
+      { token: "macro", foreground: "C04BFF" },
+      { token: "operator", foreground: "A3A9C2" },
+      { token: "delimiter", foreground: "A3A9C2" },
+      { token: "comment", foreground: "6B7192", fontStyle: "italic" },
+      { token: "identifier", foreground: "F2EFE8" },
     ],
     colors: {
-      "editor.background": "#12161d",
-      "editor.foreground": "#ebeef3",
-      "editor.lineHighlightBackground": "#181d2680",
-      "editor.selectionBackground": "#4c8eff40",
-      "editorCursor.foreground": "#6ba0ff",
-      "editorLineNumber.foreground": "#5b6472",
-      "editorLineNumber.activeForeground": "#8d96a6",
-      "editorIndentGuide.background": "#232a36",
-      "editorIndentGuide.activeBackground": "#333c4d",
-      "editorGutter.background": "#12161d",
-      "scrollbarSlider.background": "#232a36a0",
-      "scrollbarSlider.hoverBackground": "#333c4dc0",
+      "editor.background": "#080A14",
+      "editor.foreground": "#F2EFE8",
+      "editor.lineHighlightBackground": "#FFFFFF0A",
+      "editor.lineHighlightBorder": "#00000000",
+      "editor.selectionBackground": "#3D7BFF47",
+      "editor.inactiveSelectionBackground": "#3D7BFF24",
+      "editorCursor.foreground": "#F2EFE8",
+      "editorLineNumber.foreground": "#5A6080",
+      "editorLineNumber.activeForeground": "#9AA0B8",
+      "editorIndentGuide.background1": "#BEC8FF1A",
+      "editorIndentGuide.activeBackground1": "#BEC8FF38",
+      "editorBracketMatch.background": "#00000000",
+      "editorBracketMatch.border": "#9AA0B8",
+      "editorGutter.background": "#080A14",
+      "editorWidget.background": "#161B33",
+      "editorWidget.border": "#BEC8FF38",
+      "scrollbarSlider.background": "#BEC8FF22",
+      "scrollbarSlider.hoverBackground": "#BEC8FF38",
+      "editorError.foreground": "#FF5A5F",
     },
   });
 
-  monaco.editor.defineTheme(LIGHT_THEME_ID, {
+  monaco.editor.defineTheme(PAPER_THEME, {
     base: "vs",
     inherit: false,
     rules: [
-      { token: "", foreground: "151a23", background: "ffffff" },
-      { token: "keyword", foreground: "0f4fc9", fontStyle: "bold" },
-      { token: "predefined", foreground: "0891b2" },
-      { token: "comment", foreground: "8891a1", fontStyle: "italic" },
-      { token: "string", foreground: "059669" },
-      { token: "number", foreground: "b45309" },
-      { token: "number.hex", foreground: "b45309" },
-      { token: "identifier", foreground: "151a23" },
-      { token: "delimiter", foreground: "5c6576" },
-      { token: "operator", foreground: "5c6576" },
+      { token: "", foreground: "12142A", background: "FBF9F4" },
+      { token: "keyword", foreground: "8F2CCC" },
+      { token: "keyword.direction", foreground: "2156DC", fontStyle: "bold" },
+      { token: "type", foreground: "2156DC" },
+      { token: "number", foreground: "A86400" },
+      { token: "string", foreground: "00806F" },
+      { token: "predefined", foreground: "C93D1C" },
+      { token: "macro", foreground: "8F2CCC" },
+      { token: "operator", foreground: "5D6178" },
+      { token: "delimiter", foreground: "5D6178" },
+      { token: "comment", foreground: "8A8DA0", fontStyle: "italic" },
+      { token: "identifier", foreground: "12142A" },
     ],
     colors: {
-      "editor.background": "#ffffff",
-      "editor.foreground": "#151a23",
-      "editor.lineHighlightBackground": "#eef1f680",
-      "editor.selectionBackground": "#1d5fe030",
-      "editorCursor.foreground": "#0f4fc9",
-      "editorLineNumber.foreground": "#8891a1",
-      "editorLineNumber.activeForeground": "#5c6576",
-      "editorIndentGuide.background": "#dde2ea",
-      "editorIndentGuide.activeBackground": "#c3cad6",
-      "editorGutter.background": "#ffffff",
-      "scrollbarSlider.background": "#dde2eaa0",
-      "scrollbarSlider.hoverBackground": "#c3cad6c0",
+      "editor.background": "#FBF9F4",
+      "editor.foreground": "#12142A",
+      "editor.lineHighlightBackground": "#12142A08",
+      "editor.lineHighlightBorder": "#00000000",
+      "editor.selectionBackground": "#3D7BFF47",
+      "editor.inactiveSelectionBackground": "#3D7BFF24",
+      "editorCursor.foreground": "#12142A",
+      "editorLineNumber.foreground": "#9A9DB0",
+      "editorLineNumber.activeForeground": "#5D6178",
+      "editorIndentGuide.background1": "#12142A1A",
+      "editorIndentGuide.activeBackground1": "#12142A38",
+      "editorBracketMatch.background": "#00000000",
+      "editorBracketMatch.border": "#5D6178",
+      "editorGutter.background": "#FBF9F4",
+      "editorWidget.background": "#FFFDF8",
+      "editorWidget.border": "#12142A38",
+      "scrollbarSlider.background": "#12142A22",
+      "scrollbarSlider.hoverBackground": "#12142A38",
+      "editorError.foreground": "#C2333A",
     },
   });
 };
 
-export default function CodeEditor({ value, onChange, height = "420px" }: Props) {
+export default function CodeEditor({ value, onChange, height = "420px", onMount, readOnly = false, framed = true }: Props) {
   const theme = useTheme();
-
-  return (
-    <div style={{ border: "1px solid var(--border)", borderRadius: "var(--radius)", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
-      <Editor
-        height={height}
-        language={VERILOG_LANGUAGE_ID}
-        theme={theme === "dark" ? DARK_THEME_ID : LIGHT_THEME_ID}
-        value={value}
-        onChange={(v) => onChange(v ?? "")}
-        beforeMount={handleBeforeMount}
-        options={{
-          fontSize: 13,
-          fontFamily: "var(--font-mono), ui-monospace, monospace",
-          minimap: { enabled: false },
-          scrollBeyondLastLine: false,
-          tabSize: 4,
-          automaticLayout: true,
-          padding: { top: 14 },
-          cursorBlinking: "smooth",
-          // Off by default in Monaco, and the actual cause of a
-          // white/gold-text bug this replaces: it colors matching
-          // brackets from Monaco's own fixed palette, a layer completely
-          // separate from — and rendered on top of — the language theme's
-          // token `rules`. See the CSS override in globals.css too.
-          bracketPairColorization: { enabled: false },
-        }}
-      />
-    </div>
+  const editor = (
+    <Editor
+      height={height}
+      language={VERILOG_LANGUAGE_ID}
+      theme={theme === "paper" ? PAPER_THEME : INK_THEME}
+      value={value}
+      onChange={(v) => onChange(v ?? "")}
+      beforeMount={handleBeforeMount}
+      onMount={onMount}
+      loading={null}
+      options={{
+        readOnly,
+        fontSize: 13.5,
+        lineHeight: 21,
+        fontFamily: "var(--font-mono), ui-monospace, monospace",
+        fontLigatures: false,
+        minimap: { enabled: false },
+        wordWrap: "off",
+        scrollBeyondLastLine: false,
+        tabSize: 2,
+        insertSpaces: true,
+        detectIndentation: false,
+        automaticLayout: true,
+        padding: { top: 12, bottom: 12 },
+        lineNumbersMinChars: 4,
+        lineDecorationsWidth: 12,
+        glyphMargin: false,
+        folding: false,
+        renderLineHighlight: "line",
+        cursorStyle: "line",
+        cursorWidth: 2,
+        cursorBlinking: "solid",
+        cursorSmoothCaretAnimation: "off",
+        smoothScrolling: false,
+        matchBrackets: "always",
+        guides: { indentation: true, bracketPairs: false },
+        // Off: Monaco's own bracket palette paints over the theme's token
+        // colours. See the CSS override in globals.css as well.
+        bracketPairColorization: { enabled: false },
+        overviewRulerLanes: 0,
+        hideCursorInOverviewRuler: true,
+        scrollbar: { verticalScrollbarSize: 10, horizontalScrollbarSize: 10, useShadows: false },
+        renderWhitespace: "none",
+        fixedOverflowWidgets: true,
+      }}
+    />
   );
+  if (!framed) return editor;
+  return <div style={{ border: "1px solid var(--border)", borderRadius: "var(--r-sm)", overflow: "hidden" }}>{editor}</div>;
 }

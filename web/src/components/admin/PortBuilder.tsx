@@ -15,7 +15,7 @@ export default function PortBuilder({ ports, onChange }: Props) {
     onChange(ports.map((p, idx) => (idx === i ? { ...p, ...patch } : p)));
   }
   function add() {
-    onChange([...ports, { name: "", dir: "input", width: 1 }]);
+    onChange([...ports, { name: "", dir: "input", width: 1, desc: "" }]);
   }
   function remove(i: number) {
     onChange(ports.filter((_, idx) => idx !== i));
@@ -23,10 +23,11 @@ export default function PortBuilder({ ports, onChange }: Props) {
 
   return (
     <div>
-      <div className="mono" style={{ display: "grid", gridTemplateColumns: "1fr 120px 90px 30px", gap: 8, marginBottom: 8, fontSize: 11, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+      <div className="mono" style={{ display: "grid", gridTemplateColumns: "140px 120px 80px 1fr 30px", gap: 8, marginBottom: 8, fontSize: 11, color: "var(--fg-faint)", textTransform: "uppercase", letterSpacing: "0.1em" }}>
         <span>name</span>
         <span>direction</span>
         <span>width</span>
+        <span>description</span>
         <span />
       </div>
       <AnimatePresence initial={false}>
@@ -36,7 +37,7 @@ export default function PortBuilder({ ports, onChange }: Props) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            style={{ display: "grid", gridTemplateColumns: "1fr 120px 90px 30px", gap: 8, marginBottom: 8, alignItems: "center" }}
+            style={{ display: "grid", gridTemplateColumns: "140px 120px 80px 1fr 30px", gap: 8, marginBottom: 8, alignItems: "center" }}
           >
             <Input aria-label="Port name" placeholder="e.g. a" value={p.name} onChange={(e) => update(i, { name: e.target.value })} style={{ padding: "7px 10px", fontSize: 13 }} />
             <Select aria-label="Direction" value={p.dir} onChange={(e) => update(i, { dir: e.target.value as Port["dir"] })} style={{ padding: "7px 10px", fontSize: 13 }}>
@@ -51,14 +52,15 @@ export default function PortBuilder({ ports, onChange }: Props) {
               onChange={(e) => update(i, { width: parseInt(e.target.value || "1", 10) })}
               style={{ padding: "7px 10px", fontSize: 13 }}
             />
-            <button onClick={() => remove(i)} aria-label="Remove port" style={{ color: "var(--fail)", background: "none", border: "none", fontSize: 13, padding: 6 }}>
+            <Input aria-label="Description" placeholder="Shown in the port table" value={p.desc ?? ""} onChange={(e) => update(i, { desc: e.target.value })} style={{ padding: "7px 10px", fontSize: 13 }} />
+            <button onClick={() => remove(i)} aria-label="Remove port" style={{ color: "var(--fail-text)", background: "none", border: "none", fontSize: 13, padding: 6 }}>
               ✕
             </button>
           </motion.div>
         ))}
       </AnimatePresence>
       <Button variant="secondary" size="sm" onClick={add}>
-        + add port
+        Add port
       </Button>
     </div>
   );

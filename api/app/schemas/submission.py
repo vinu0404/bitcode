@@ -9,4 +9,9 @@ class SubmitRequest(BaseModel):
 class RunRequest(BaseModel):
     problem_slug: str
     code: str = Field(min_length=1)
+
+
+class CustomRunRequest(BaseModel):
+    problem_slug: str
+    code: str = Field(min_length=1)
     vectors: list[dict[str, str]] = Field(default_factory=list, max_length=50)
