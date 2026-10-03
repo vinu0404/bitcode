@@ -158,6 +158,26 @@ function Workspace({ problem }: { problem: ProblemDetail }) {
     return () => window.clearTimeout(t);
   }, [code, saveState, saveNow]);
 
+  // Leaving must never lose the last keystrokes still inside that 700ms
+  // window: flush the draft when the student navigates away inside the
+  // app (unmount), closes or reloads the tab (pagehide), or switches away
+  // (hidden). Refs, so the handlers always see the latest buffer.
+  const latest = useRef({ code, dirty: false });
+  latest.current = { code, dirty: saveState !== "saved" };
+  useEffect(() => {
+    const flush = () => {
+      if (loadedDraft.current && latest.current.dirty) saveNow(editorRef.current?.getValue() ?? latest.current.code);
+    };
+    const onHide = () => document.visibilityState === "hidden" && flush();
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", onHide);
+    return () => {
+      flush();
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", onHide);
+    };
+  }, [saveNow]);
+
   function onCodeChange(v: string) {
     setCode(v);
     setSaveState("unsaved");

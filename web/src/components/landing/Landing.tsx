@@ -13,6 +13,7 @@ import { getCatalogue } from "@/lib/api";
 import { useAuthReady } from "@/lib/auth";
 import { DOMAIN_ORDER, DOMAINS, pad2, padNumber } from "@/lib/domains";
 import ScopeField from "./ScopeField";
+import SiteFooter from "./SiteFooter";
 import SmoothScroll from "./SmoothScroll";
 import WorkspacePreview from "./WorkspacePreview";
 
@@ -104,7 +105,9 @@ export default function Landing() {
 
       {/* ── nav ─────────────────────────────────────────────────────── */}
       <header style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 20, display: "flex", alignItems: "center", gap: 28, padding: "20px clamp(16px, 4vw, 48px)" }}>
-        <Wordmark size={34} />
+        <Link href="/" aria-label="Bitcode home">
+          <Wordmark size={34} />
+        </Link>
         <nav className="bc-landing-nav" style={{ display: "flex", gap: 24, fontSize: 14, fontWeight: 600, color: "var(--fg-muted)" }}>
           <a href="#preview">Preview</a>
           <a href="#problems">Problems</a>
@@ -269,12 +272,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <footer style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", justifyContent: "space-between", padding: "28px clamp(16px, 4vw, 48px)", borderTop: "1px solid var(--border)" }}>
-        <Wordmark size={28} />
-        <p style={{ fontSize: 12, color: "var(--fg-faint)", maxWidth: 720, lineHeight: 1.6 }}>
-          Basement Grotesque by Basement Studio, SIL OFL 1.1. Shaders by Paper (Apache 2.0). Some components adapted from React Bits by David Haz.
-        </p>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

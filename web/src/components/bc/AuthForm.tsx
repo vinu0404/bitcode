@@ -1,45 +1,159 @@
 "use client";
 
+import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useEffect, useId, useState, type FormEvent, type ReactNode } from "react";
 import { ApiError } from "@/lib/api";
 import { describeError } from "@/lib/errors";
-import Button from "@/components/ui/Button";
-import { Field, Input } from "@/components/ui/Field";
+import Button, { ArrowIcon } from "@/components/ui/Button";
+import ScopeField from "@/components/landing/ScopeField";
 import { StatusIcon } from "./Status";
 import { Wordmark } from "./AppHeader";
-import ScopeField from "@/components/landing/ScopeField";
 
-/** Log in and register share one layout: a single card on a graticule. */
+/* Log in and register share one screen: a brand panel on the left that
+   says what Bitcode is, and a calm form on the right. On narrow screens the
+   brand panel becomes a short strip above the form. Switching between the
+   two modes keeps the email and the page the student was heading for. */
+
+const EMAIL_KEY = "bitcode-auth-email";
+
+type Strength = { score: 0 | 1 | 2 | 3 | 4; label: string };
+
+/** A simple, honest strength estimate: length first, then variety. Only
+ * the length rule is enforced; the meter just nudges. */
+function strength(pw: string): Strength {
+  if (!pw) return { score: 0, label: "" };
+  let s = 0;
+  if (pw.length >= 8) s++;
+  if (pw.length >= 12) s++;
+  if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) s++;
+  if (/\d/.test(pw) && /[^A-Za-z0-9]/.test(pw)) s++;
+  if (pw.length < 8) s = Math.min(s, 1);
+  const score = Math.max(1, s) as Strength["score"];
+  return { score, label: ["", "Too weak", "Okay", "Good", "Strong"][score] };
+}
+
+function MailIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
+      <rect x="1.75" y="3.25" width="12.5" height="9.5" rx="2" fill="none" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M2.5 4.5L8 8.6l5.5-4.1" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function LockIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
+      <rect x="2.75" y="7" width="10.5" height="7.25" rx="2" fill="none" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M5 7V5a3 3 0 0 1 6 0v2" fill="none" stroke="currentColor" strokeWidth="1.4" />
+    </svg>
+  );
+}
+function EyeIcon({ open }: { open: boolean }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
+      <path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8z" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+      <circle cx="8" cy="8" r="2" fill="none" stroke="currentColor" strokeWidth="1.4" />
+      {!open && <path d="M2.5 13.5l11-11" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />}
+    </svg>
+  );
+}
+
+function AuthInput({
+  id,
+  label,
+  icon,
+  error,
+  trailing,
+  below,
+  ...input
+}: React.InputHTMLAttributes<HTMLInputElement> & { id: string; label: string; icon: ReactNode; error?: string; trailing?: ReactNode; below?: ReactNode }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <label htmlFor={id} style={{ fontSize: 13, fontWeight: 600, color: "var(--fg)" }}>
+        {label}
+      </label>
+      <div className={`bc-auth-input${error ? " bc-auth-input-error" : ""}`}>
+        <span className="bc-auth-icon">{icon}</span>
+        <input id={id} aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined} {...input} />
+        {trailing}
+      </div>
+      {error ? (
+        <span id={`${id}-error`} role="alert" style={{ display: "flex", gap: 6, alignItems: "flex-start", fontSize: 13, lineHeight: 1.4, color: "var(--fail-text)" }}>
+          <span style={{ paddingTop: 1 }}>
+            <StatusIcon kind="fail" size={13} />
+          </span>
+          {error}
+        </span>
+      ) : (
+        below
+      )}
+    </div>
+  );
+}
+
 export default function AuthForm({ mode, action }: { mode: "login" | "register"; action: (email: string, password: string) => Promise<unknown> }) {
   const router = useRouter();
   const params = useSearchParams();
+  const tabsId = useId();
   const next = params.get("next");
   const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : "/bitcode";
+  const isLogin = mode === "login";
+  const expired = params.get("reason") === "expired";
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [show, setShow] = useState(false);
+  const [caps, setCaps] = useState(false);
   // A form-level problem (offline, server) and per-field ones, separately:
   // a wrong password belongs under the password, not in a banner.
   const [error, setError] = useState<{ title: string; body: string } | null>(null);
   const [fieldErr, setFieldErr] = useState<{ email?: string; password?: string }>({});
-  const expired = params.get("reason") === "expired";
   const [loading, setLoading] = useState(false);
-  const isLogin = mode === "login";
+
+  // Carry the email across a switch between Log in and Create account.
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(EMAIL_KEY);
+      if (saved) setEmail(saved);
+    } catch {
+      /* storage blocked: start empty */
+    }
+  }, []);
+  const remember = () => {
+    try {
+      sessionStorage.setItem(EMAIL_KEY, email);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const st = strength(password);
+  const longEnough = password.length >= 8;
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setFieldErr({});
+    if (!isLogin && !longEnough) {
+      setFieldErr({ password: "Use at least 8 characters." });
+      return;
+    }
     setLoading(true);
     try {
       await action(email, password);
+      try {
+        sessionStorage.removeItem(EMAIL_KEY);
+      } catch {
+        /* ignore */
+      }
       router.push(safeNext);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         setFieldErr({ password: "That email and password do not match. Check both and try again." });
       } else if (err instanceof ApiError && err.status === 409) {
-        setFieldErr({ email: "There is already an account with this email. Log in instead." });
+        setFieldErr({ email: "There is already an account with this email. Switch to Log in above." });
       } else if (err instanceof ApiError && err.status === 422 && (err.fields.email || err.fields.password)) {
         setFieldErr({ email: err.fields.email && "Enter a full email address, like name@college.edu.", password: err.fields.password && "Use at least 8 characters." });
       } else {
@@ -51,86 +165,163 @@ export default function AuthForm({ mode, action }: { mode: "login" | "register";
     }
   }
 
-  const other = isLogin ? "/register" : "/login";
-  const otherHref = next ? `${other}?next=${encodeURIComponent(safeNext)}` : other;
+  const tabHref = (m: "login" | "register") => `/${m}${next ? `?next=${encodeURIComponent(safeNext)}` : ""}`;
 
   return (
-    <main style={{ position: "relative", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, overflow: "hidden" }}>
-      <ScopeField interactive={false} intensity={0.75} />
-      <div
-        style={{
-          position: "relative",
-          width: "100%",
-          maxWidth: 400,
-          padding: 32,
-          background: "var(--bg-elevated)",
-          border: "1px solid var(--border)",
-          borderRadius: "var(--r-md)",
-        }}
-      >
-        <Link href="/" aria-label="Bitcode home">
-          <Wordmark size={38} />
-        </Link>
-        <h1 style={{ fontSize: 22, fontWeight: 600, margin: "28px 0 24px" }}>{isLogin ? "Log in" : "Create an account"}</h1>
-        {expired && isLogin && !error && (
-          <div role="status" style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "10px 12px", marginBottom: 18, borderRadius: "var(--r-sm)", background: "color-mix(in srgb, var(--warn) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--warn) 40%, transparent)" }}>
-            <StatusIcon kind="warn" size={14} />
-            <span style={{ fontSize: 13.5, lineHeight: 1.45 }}>
-              <strong style={{ fontWeight: 600 }}>Your session ended.</strong> <span style={{ color: "var(--fg-muted)" }}>Log in and you will land back where you were. Drafts are still saved.</span>
-            </span>
+    <main className="bc-auth">
+      {/* brand panel */}
+      <aside className="bc-auth-brand">
+        <ScopeField interactive intensity={0.9} />
+        <div style={{ position: "relative", display: "flex", flexDirection: "column", height: "100%", justifyContent: "space-between", gap: 32 }}>
+          <Link href="/" aria-label="Bitcode home" style={{ alignSelf: "flex-start" }}>
+            <Wordmark size={34} />
+          </Link>
+          <div className="bc-auth-pitch">
+            <h2 className="display" style={{ fontSize: "clamp(40px, 4.6vw, 76px)", lineHeight: 0.88 }}>
+              Write hardware.
+              <br />
+              <span style={{ color: "var(--ch1)" }}>Prove it.</span>
+            </h2>
           </div>
-        )}
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <Field label="Email" htmlFor="email" error={fieldErr.email}>
-            <Input
+          <svg viewBox="0 0 600 40" preserveAspectRatio="none" className="bc-auth-trace" aria-hidden style={{ width: "100%", height: 40 }}>
+            <path d="M0 32H50V8H100V32H150V8H200V32H250V8H300V32H350V8H400V32H450V8H500V32H550V8H600" fill="none" stroke="var(--wave-clock)" strokeWidth="1.5" vectorEffect="non-scaling-stroke" pathLength={1} className="bc-trace-draw" />
+          </svg>
+        </div>
+      </aside>
+
+      {/* form */}
+      <section className="bc-auth-form">
+        <div style={{ width: "100%", maxWidth: 400 }}>
+          <nav aria-label="Account" style={{ position: "relative", display: "flex", gap: 24, borderBottom: "1px solid var(--border)", marginBottom: 32 }}>
+            {(["login", "register"] as const).map((m) => {
+              const on = m === mode;
+              return (
+                <Link
+                  key={m}
+                  href={tabHref(m)}
+                  onClick={remember}
+                  aria-current={on ? "page" : undefined}
+                  style={{ position: "relative", padding: "0 0 12px", fontSize: 14, fontWeight: 600, color: on ? "var(--fg)" : "var(--fg-muted)" }}
+                >
+                  {m === "login" ? "Log in" : "Create account"}
+                  {on && <motion.span layoutId={`auth-tab-${tabsId}`} style={{ position: "absolute", left: 0, right: 0, bottom: -1, height: 2, background: "var(--ch3)" }} />}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <h1 className="display" style={{ fontSize: 44, lineHeight: 0.95 }}>
+            {isLogin ? "Welcome back." : "Start building."}
+          </h1>
+          <p style={{ fontSize: 15, color: "var(--fg-muted)", margin: "12px 0 28px" }}>
+            {isLogin ? "Log in to pick up your problems and streak." : "Free account. Your code and progress save as you go."}
+          </p>
+
+          {expired && isLogin && !error && (
+            <div role="status" className="bc-auth-note" style={{ ["--tone" as string]: "var(--warn)" }}>
+              <StatusIcon kind="warn" size={14} />
+              <span>
+                <strong>Your session ended.</strong> Log in and you will land back where you were. Drafts are still saved.
+              </span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            <AuthInput
               id="email"
+              label="Email"
+              icon={<MailIcon />}
               type="email"
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
                 if (fieldErr.email) setFieldErr((f) => ({ ...f, email: undefined }));
               }}
+              placeholder="you@college.edu"
               required
               autoComplete="email"
-              aria-invalid={!!fieldErr.email}
-              aria-describedby={fieldErr.email ? "email-error" : undefined}
+              autoFocus
+              error={fieldErr.email}
             />
-          </Field>
-          <Field label="Password" htmlFor="password" hint={isLogin ? undefined : "At least 8 characters."} error={fieldErr.password}>
-            <Input
+            <AuthInput
               id="password"
-              type="password"
+              label="Password"
+              icon={<LockIcon />}
+              type={show ? "text" : "password"}
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
                 if (fieldErr.password) setFieldErr((f) => ({ ...f, password: undefined }));
               }}
-              aria-invalid={!!fieldErr.password}
-              aria-describedby={fieldErr.password ? "password-error" : undefined}
+              onKeyUp={(e) => setCaps(e.getModifierState("CapsLock"))}
+              onKeyDown={(e) => setCaps(e.getModifierState("CapsLock"))}
+              onBlur={() => setCaps(false)}
+              placeholder={isLogin ? "Your password" : "8 or more characters"}
               required
               minLength={isLogin ? undefined : 8}
               autoComplete={isLogin ? "current-password" : "new-password"}
+              error={fieldErr.password}
+              trailing={
+                <button type="button" className="bc-auth-eye" onClick={() => setShow((s) => !s)} aria-label={show ? "Hide password" : "Show password"} aria-pressed={show}>
+                  <EyeIcon open={show} />
+                </button>
+              }
+              below={
+                <>
+                  {caps && (
+                    <span style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 13, color: "var(--warn)" }}>
+                      <StatusIcon kind="warn" size={13} /> Caps Lock is on
+                    </span>
+                  )}
+                  {!isLogin && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }} aria-live="polite">
+                      <span style={{ display: "flex", gap: 4, flex: 1 }} aria-hidden>
+                        {[1, 2, 3, 4].map((n) => (
+                          <span
+                            key={n}
+                            style={{
+                              flex: 1,
+                              height: 4,
+                              borderRadius: 2,
+                              background: st.score >= n ? (st.score <= 1 ? "var(--fail)" : st.score === 2 ? "var(--warn)" : "var(--pass)") : "var(--border-strong)",
+                              transition: "background 200ms",
+                            }}
+                          />
+                        ))}
+                      </span>
+                      <span className="mono" style={{ fontSize: 11, minWidth: 64, textAlign: "right", color: "var(--fg-muted)" }}>
+                        {st.label}
+                      </span>
+                    </div>
+                  )}
+                  {!isLogin && (
+                    <span style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 13, color: longEnough ? "var(--pass)" : "var(--fg-faint)", transition: "color 200ms" }}>
+                      <StatusIcon kind={longEnough ? "pass" : "pending"} size={13} />8 or more characters
+                    </span>
+                  )}
+                </>
+              }
             />
-          </Field>
-          {error && (
-            <div role="alert" style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "10px 12px", borderRadius: "var(--r-sm)", background: "color-mix(in srgb, var(--fail) 9%, transparent)", border: "1px solid color-mix(in srgb, var(--fail) 40%, transparent)" }}>
-              <StatusIcon kind="fail" size={14} />
-              <span style={{ fontSize: 13.5, lineHeight: 1.45 }}>
-                <strong style={{ fontWeight: 600 }}>{error.title}.</strong> <span style={{ color: "var(--fg-muted)" }}>{error.body}</span>
-              </span>
-            </div>
-          )}
-          <Button type="submit" variant="primary" size="lg" loading={loading} loadingLabel={isLogin ? "Logging in" : "Creating"} style={{ width: "100%", marginTop: 4 }}>
-            {isLogin ? "Log in" : "Create account"}
-          </Button>
-        </form>
-        <p style={{ fontSize: 13.5, color: "var(--fg-muted)", marginTop: 20 }}>
-          {isLogin ? "No account yet? " : "Already registered? "}
-          <Link href={otherHref} style={{ color: "var(--ch3-text)", fontWeight: 600 }}>
-            {isLogin ? "Create one" : "Log in"}
-          </Link>
-        </p>
-      </div>
+
+            {error && (
+              <div role="alert" className="bc-auth-note" style={{ ["--tone" as string]: "var(--fail)" }}>
+                <StatusIcon kind="fail" size={14} />
+                <span>
+                  <strong>{error.title}.</strong> {error.body}
+                </span>
+              </div>
+            )}
+
+            <Button type="submit" variant="primary" size="lg" loading={loading} loadingLabel={isLogin ? "Logging in" : "Creating account"} style={{ width: "100%", marginTop: 4 }} icon={<ArrowIcon />}>
+              {isLogin ? "Log in" : "Create account"}
+            </Button>
+          </form>
+
+          <p style={{ fontSize: 12.5, color: "var(--fg-faint)", marginTop: 24, lineHeight: 1.5 }}>
+            {isLogin ? "New here? Switch to Create account above. It takes ten seconds." : "Your email is only used to sign you in."}
+          </p>
+        </div>
+      </section>
     </main>
   );
 }

@@ -63,7 +63,7 @@ export default function AppHeader() {
         borderBottom: "1px solid var(--border)",
       }}
     >
-      <Link href="/bitcode" aria-label="Bitcode home">
+      <Link href="/" aria-label="Bitcode home">
         <Wordmark />
       </Link>
       <nav style={{ display: "flex", gap: 4 }}>
