@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@monaco-editor/react": "4.6.0",
+    "@monaco-editor/react": "4.7.0",
     "@paper-design/shaders-react": "^0.0.81",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.119.2",
