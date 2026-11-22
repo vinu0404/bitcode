@@ -37,9 +37,13 @@ class Settings(BaseSettings):
 
     # OpenAI
     openai_api_key: str = ""
-    openai_model: str = "gpt-4.1-mini"
-    openai_timeout_seconds: int = 20
-    openai_max_output_tokens: int = 400
+    openai_model: str = "gpt-5.6-luna"
+    openai_timeout_seconds: int = 30
+    # Reasoning tokens count against this, so it sits far above the few
+    # sentences a feedback reply actually needs.
+    openai_max_output_tokens: int = 3000
+    # Drafting a whole testbench is slow and admin-only, so it gets longer.
+    openai_authoring_timeout_seconds: int = 120
     feedback_enabled: bool = True
 
     # Simulator sandbox
