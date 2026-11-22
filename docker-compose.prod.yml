@@ -1,15 +1,26 @@
 # Production on a single Linux server (Oracle Always Free, Fly, any VPS).
 # The database is Supabase, so there is no db service here.
-#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Normal deploy: GitHub builds the image, the server only pulls it, which
+# matters on a 1 GB machine where building can run out of memory:
+#   docker compose -f docker-compose.prod.yml pull api
+#   docker compose -f docker-compose.prod.yml up -d
+# Fallback if the image is not published yet (slower, needs swap on 1 GB):
+#   docker compose -f docker-compose.prod.yml build api
+#   docker compose -f docker-compose.prod.yml up -d
 name: bitcode
 
 services:
   api:
+    image: ghcr.io/vinu0404/bitcode-api:latest
     build: ./api
     env_file: .env
     restart: unless-stopped
     expose:
       - "7860"
+    # Hard ceiling so a runaway job cannot take the whole server down.
+    # Use API_MEM_LIMIT=600m on a 1 GB machine.
+    mem_limit: ${API_MEM_LIMIT:-1500m}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:7860/health', timeout=3)"]
       interval: 30s
