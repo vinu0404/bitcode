@@ -6,8 +6,9 @@ from sqlalchemy.orm import Session
 from app.deps import get_current_user, get_db
 from app.errors import ConflictError, UnauthorizedError
 from app.models.user import RefreshToken, User
-from app.schemas.auth import LoginRequest, LogoutRequest, RefreshRequest, RegisterRequest, TokenPair, UserOut
+from app.schemas.auth import LoginRequest, LogoutRequest, RefreshRequest, RegisterRequest, SupabaseLoginRequest, TokenPair, UserOut
 from app.security import create_access_token, hash_password, hash_refresh_token, new_refresh_token, verify_password
+from app.services.supabase_auth import sign_in_with_supabase, verified_identity
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -36,8 +37,15 @@ def register(body: RegisterRequest, db: Session = Depends(get_db)) -> TokenPair:
 @router.post("/login", response_model=TokenPair)
 def login(body: LoginRequest, db: Session = Depends(get_db)) -> TokenPair:
     user = db.query(User).filter(User.email == body.email.lower()).first()
-    if not user or not verify_password(body.password, user.password_hash) or not user.is_active:
+    # A Supabase-only account has no password hash: same answer as a wrong password.
+    if not user or not user.password_hash or not verify_password(body.password, user.password_hash) or not user.is_active:
         raise UnauthorizedError("Incorrect email or password.")
+    return _issue_token_pair(db, user)
+
+
+@router.post("/supabase", response_model=TokenPair)
+def supabase_login(body: SupabaseLoginRequest, db: Session = Depends(get_db)) -> TokenPair:
+    user = sign_in_with_supabase(db, verified_identity(body.access_token))
     return _issue_token_pair(db, user)
 
 
