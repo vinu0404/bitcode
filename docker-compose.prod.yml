@@ -1,0 +1,37 @@
+# Production on a single Linux server (Oracle Always Free, Fly, any VPS).
+# The database is Supabase, so there is no db service here.
+#   docker compose -f docker-compose.prod.yml up -d --build
+name: bitcode
+
+services:
+  api:
+    build: ./api
+    env_file: .env
+    restart: unless-stopped
+    expose:
+      - "7860"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:7860/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      API_DOMAIN: ${API_DOMAIN:?set API_DOMAIN in .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:
