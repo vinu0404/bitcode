@@ -16,7 +16,10 @@ services:
       retries: 10
 
   api:
-    build: ./api
+    build:
+      context: ./api
+      args:
+        INSTALL_DEV: "true"
     env_file: .env
     ports:
       - "${API_PORT}:7860"
