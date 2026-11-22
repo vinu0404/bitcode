@@ -2,17 +2,16 @@ import type { Difficulty, Domain } from "./api";
 
 export interface DomainMeta {
   id: Domain;
-  channel: string; // CH1
   label: string; // VLSI
-  fill: string; // CSS var, the channel colour as a fill
-  text: string; // CSS var, the channel colour as readable text on the current theme
+  fill: string; // CSS var, the domain colour as a fill
+  text: string; // CSS var, the domain colour as readable text on the current theme
 }
 
 export const DOMAINS: Record<Domain, DomainMeta> = {
-  vlsi: { id: "vlsi", channel: "CH1", label: "VLSI", fill: "var(--ch1)", text: "var(--ch1-text)" },
-  embedded: { id: "embedded", channel: "CH2", label: "Embedded", fill: "var(--ch2)", text: "var(--ch2-text)" },
-  communication: { id: "communication", channel: "CH3", label: "Communication", fill: "var(--ch3)", text: "var(--ch3-text)" },
-  others: { id: "others", channel: "CH4", label: "Others", fill: "var(--ch4)", text: "var(--ch4-text)" },
+  vlsi: { id: "vlsi", label: "VLSI", fill: "var(--ch1)", text: "var(--ch1-text)" },
+  embedded: { id: "embedded", label: "Embedded", fill: "var(--ch2)", text: "var(--ch2-text)" },
+  communication: { id: "communication", label: "Communication", fill: "var(--ch3)", text: "var(--ch3-text)" },
+  others: { id: "others", label: "Others", fill: "var(--ch4)", text: "var(--ch4-text)" },
 };
 
 export const DOMAIN_ORDER: Domain[] = ["vlsi", "embedded", "communication", "others"];

@@ -83,7 +83,6 @@ export default function SiteFooter() {
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "space-between", padding: "0 clamp(16px, 4vw, 48px) 12px", fontSize: 12, color: "var(--fg-faint)" }}>
         <span>© {year} Bitronics</span>
-        <span>Basement Grotesque by Basement Studio (SIL OFL 1.1). Shaders by Paper (Apache 2.0). Some components adapted from React Bits.</span>
       </div>
 
       {/* the giant wordmark, cropped by the bottom edge */}

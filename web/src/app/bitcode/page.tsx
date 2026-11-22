@@ -144,7 +144,7 @@ function ProblemsPageInner() {
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", maxWidth: 520 }}>
                     {(
                       [
-                        filters.domain && ["domain", `${DOMAINS[filters.domain].channel} ${DOMAINS[filters.domain].label}`],
+                        filters.domain && ["domain", DOMAINS[filters.domain].label],
                         filters.difficulty && ["difficulty", filters.difficulty[0].toUpperCase() + filters.difficulty.slice(1)],
                         filters.language && ["language", LANGUAGE_LABEL[filters.language]],
                         filters.status && ["status", STATUS_ICON[filters.status].label],
@@ -202,7 +202,7 @@ function ListHeader() {
       <span style={cell}>No.</span>
       <span style={cell}>Title</span>
       <span className="bc-hide-narrow" style={cell}>
-        Channel
+        Domain
       </span>
       <span className="bc-hide-narrow" style={cell}>
         Lang
@@ -324,11 +324,11 @@ function FilterBar({
         borderRadius: "var(--r-md) var(--r-md) 0 0",
       }}
     >
-      <div style={group} role="group" aria-label="Channel">
+      <div style={group} role="group" aria-label="Domain">
         {DOMAIN_ORDER.map((d) => (
           <button key={d} className="bc-chip" aria-pressed={filters.domain === d} onClick={() => toggle("domain", d)}>
             <span className="bc-dot" style={{ background: DOMAINS[d].fill }} />
-            {DOMAINS[d].channel} {DOMAINS[d].label}
+            {DOMAINS[d].label}
           </button>
         ))}
       </div>

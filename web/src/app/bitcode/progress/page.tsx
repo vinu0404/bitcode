@@ -99,7 +99,7 @@ function Body({ s, r }: { s: MeStats; r?: MeRecent }) {
         <Panel>
           <EmptyState
             title="Nothing to chart yet"
-            body="Submit your first design and this page fills in: the days you practised, your streak, and how far you are in each channel."
+            body="Submit your first design and this page fills in: the days you practised, your streak, and how far you are in each domain."
             channel="var(--pass)"
             minHeight={300}
             action={
@@ -168,7 +168,7 @@ function Body({ s, r }: { s: MeStats; r?: MeRecent }) {
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: 24 }}>
         <Panel>
-          <PanelHead title="By channel" right={<span style={label}>One period per problem</span>} />
+          <PanelHead title="By domain" right={<span style={label}>One period per problem</span>} />
           <ChannelTraces rows={s.by_domain} />
         </Panel>
         <Panel>
@@ -366,8 +366,8 @@ function Heatmap({ days }: { days: MeStats["heatmap"] }) {
   );
 }
 
-/** One clock period per problem in the channel: a high pulse for each
- * solved problem, low for the rest. Empty channels show a dashed flat line. */
+/** One clock period per problem in the domain: a high pulse for each
+ * solved problem, low for the rest. Empty domains show a dashed flat line. */
 function ChannelTraces({ rows }: { rows: MeStats["by_domain"] }) {
   const W = 300, H = 26, hi = 5, lo = H - 5;
   return (
@@ -386,7 +386,7 @@ function ChannelTraces({ rows }: { rows: MeStats["by_domain"] }) {
         return (
           <div key={r.domain} style={{ display: "grid", gridTemplateColumns: "150px minmax(0, 1fr) 72px", alignItems: "center", gap: 16, padding: "14px 24px", borderBottom: "1px solid var(--border)" }}>
             <span className="mono" style={{ fontSize: 12, fontWeight: 600, color: r.total ? ch.text : "var(--fg-faint)" }}>
-              {ch.channel} {ch.label}
+              {ch.label}
             </span>
             <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ width: "100%", height: H }} aria-hidden>
               <motion.path
@@ -420,7 +420,7 @@ function NextUpCard({ next, allDone }: { next: MeRecent["next_up"]; allDone: boo
         <EmptyState
           channel="var(--pass)"
           title={allDone ? "Every problem solved" : "Nothing queued"}
-          body={allDone ? "That is the whole catalogue. New channels are on the way." : "New problems appear here as they are published."}
+          body={allDone ? "That is the whole catalogue. New domains are on the way." : "New problems appear here as they are published."}
           minHeight={220}
         />
       </Panel>

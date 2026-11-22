@@ -60,7 +60,7 @@ export default function CommandPalette({ commands = [] }: { commands?: Command[]
       base.push({
         id: `p-${p.slug}`,
         group: "Open problem",
-        label: `${padNumber(p.number)}  ${p.title}  ${DOMAINS[p.domain].channel}`,
+        label: `${padNumber(p.number)}  ${p.title}  ${DOMAINS[p.domain].label}`,
         run: () => router.push(`/bitcode/${p.slug}`),
       });
     }
