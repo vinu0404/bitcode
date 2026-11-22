@@ -1,3 +1,6 @@
+import re
+
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -15,6 +18,10 @@ class Settings(BaseSettings):
     db_pool_size: int = 5
     db_max_overflow: int = 10
     db_pool_recycle_seconds: int = 1800
+    # Postgres schema holding every Bitcode table. Empty means the default
+    # (public). Set it (e.g. "bitcode") when sharing a database with another
+    # app, so table names such as "topic" or "profile" can never collide.
+    database_schema: str = ""
 
     # Auth
     jwt_secret: str = "dev-secret-change-me"
@@ -23,6 +30,10 @@ class Settings(BaseSettings):
     refresh_token_days: int = 7
     bootstrap_admin_email: str = "admin@bitcode.local"
     bootstrap_admin_password: str = "change_me_local_only"
+
+    # Supabase Auth (Google sign-in). The publishable key is public by design.
+    supabase_url: str = ""
+    supabase_publishable_key: str = ""
 
     # OpenAI
     openai_api_key: str = ""
@@ -52,6 +63,15 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000"
     seed_on_boot: bool = True
     log_level: str = "INFO"
+
+    @field_validator("database_schema")
+    @classmethod
+    def _schema_is_a_plain_identifier(cls, v: str) -> str:
+        # It is interpolated into SET search_path / CREATE SCHEMA, so it must
+        # be a bare identifier, never arbitrary SQL.
+        if v and not re.fullmatch(r"[a-z_][a-z0-9_]{0,62}", v):
+            raise ValueError("DATABASE_SCHEMA must be lowercase letters, digits and underscores")
+        return v
 
     @property
     def cors_origin_list(self) -> list[str]:

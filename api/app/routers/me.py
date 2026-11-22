@@ -1,4 +1,4 @@
-"""Aggregates for the Progress page: solved per channel and difficulty, the
+"""Aggregates for the Progress page: solved per domain and difficulty, the
 26-week heatmap and the streak. Every number is derived live from
 `submissions` and `results`; no separate fact table is needed."""
 

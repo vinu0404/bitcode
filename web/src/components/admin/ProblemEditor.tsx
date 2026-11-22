@@ -376,7 +376,7 @@ export default function ProblemEditor({ initial }: { initial?: AdminProblemDetai
                 <Input id="title" value={d.title} onChange={(e) => set("title", e.target.value)} placeholder="Build a 1-bit full adder" />
               </Field>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <span style={label}>Channel</span>
+                <span style={label}>Domain</span>
                 <ChannelPicker value={d.domain} onChange={(v) => set("domain", v)} />
               </div>
               <div style={{ display: "flex", gap: 28, flexWrap: "wrap" }}>

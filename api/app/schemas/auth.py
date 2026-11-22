@@ -14,6 +14,10 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class SupabaseLoginRequest(BaseModel):
+    access_token: str = Field(min_length=10, max_length=8192)
+
+
 class RefreshRequest(BaseModel):
     refresh_token: str
 
@@ -32,6 +36,8 @@ class UserOut(BaseModel):
     id: uuid.UUID
     email: str
     role: str
+    display_name: str | None = None
+    avatar_url: str | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}

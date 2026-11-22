@@ -33,7 +33,7 @@ class MeStats(BaseModel):
     total_problems: int
     total_submissions: int
     by_difficulty: list[DifficultyBucket]
-    by_domain: list[DomainBucket]  # all four channels, in channel order, even when empty
+    by_domain: list[DomainBucket]  # all four domains, in domain order, even when empty
     by_topic: list[TopicBucket]
     heatmap: list[HeatmapDay]  # one entry per day, oldest first, whole weeks ending on today's week
     current_streak: int  # consecutive days with at least one submit

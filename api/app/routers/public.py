@@ -1,6 +1,6 @@
 """Unauthenticated, read-only endpoints for the marketing pages. Exposes only
 what a visitor would see on the problem list anyway: number, title,
-difficulty, channel. Never statements, tests or anything about grading."""
+difficulty, domain. Never statements, tests or anything about grading."""
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel

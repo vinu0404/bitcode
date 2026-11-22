@@ -24,7 +24,7 @@ export function DomainBadge({ domain, compact = false }: { domain: Domain; compa
         flex: "none",
       }}
     >
-      {compact ? d.channel : `${d.channel} ${d.label}`}
+      {d.label}
     </span>
   );
 }

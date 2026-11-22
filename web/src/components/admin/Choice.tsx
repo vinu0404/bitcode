@@ -46,11 +46,11 @@ function Check({ on, color }: { on: boolean; color: string }) {
   );
 }
 
-/** Channel as four check-mark cards, each in its channel colour. */
+/** Domain as four check-mark cards, each in its own colour. */
 export function ChannelPicker({ value, onChange, id }: { value: Domain; onChange: (d: Domain) => void; id?: string }) {
   const { refs, onKeyDown } = useRovingKeys(DOMAIN_ORDER, value, onChange);
   return (
-    <div id={id} role="radiogroup" aria-label="Channel" onKeyDown={onKeyDown} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
+    <div id={id} role="radiogroup" aria-label="Domain" onKeyDown={onKeyDown} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
       {DOMAIN_ORDER.map((d, i) => {
         const on = d === value;
         const ch = DOMAINS[d];
@@ -79,9 +79,6 @@ export function ChannelPicker({ value, onChange, id }: { value: Domain; onChange
           >
             <Check on={on} color={ch.fill} />
             <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-              <span className="mono" style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.16em", color: ch.text }}>
-                {ch.channel}
-              </span>
               <span style={{ fontSize: 14, fontWeight: 600 }}>{ch.label}</span>
             </span>
           </button>

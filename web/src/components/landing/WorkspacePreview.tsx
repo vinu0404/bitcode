@@ -9,9 +9,8 @@ import { DifficultySignal, DomainBadge } from "@/components/bc/Marks";
    step as it happens. It shows how the product is used, never how answers
    are checked.
 
-   It plays once when scrolled into view and holds the last frame; Replay
-   runs it again on request. Reduced motion and hidden pages get the
-   finished frame straight away. */
+   It loops while in view and pauses off-screen. Reduced motion and hidden
+   pages get the finished frame straight away. */
 
 const CODE = [
   "module counter4 (",
@@ -51,6 +50,9 @@ const SCRIPT: Array<[number, Phase]> = [
   [5000, "done"],
 ];
 
+// Finished frame is held for a moment, then the demo starts over.
+const LOOP_MS = 7800;
+
 const ORDER: Phase[] = ["idle", "typing", "toRun", "clickRun", "running", "ran", "toSubmit", "clickSubmit", "checking", "done"];
 const at = (p: Phase, q: Phase) => ORDER.indexOf(p) >= ORDER.indexOf(q);
 
@@ -86,7 +88,10 @@ export default function WorkspacePreview() {
       const t = Math.min(1, (now - start) / TYPE_MS);
       setChars(Math.round(t * TOTAL));
       if (t < 1) raf.current = requestAnimationFrame(step);
-      else for (const [ms, p] of SCRIPT) timers.current.push(window.setTimeout(() => setPhase(p), ms));
+      else {
+        for (const [ms, p] of SCRIPT) timers.current.push(window.setTimeout(() => setPhase(p), ms));
+        timers.current.push(window.setTimeout(play, LOOP_MS));
+      }
     };
     raf.current = requestAnimationFrame(step);
   }, []);
@@ -99,22 +104,26 @@ export default function WorkspacePreview() {
       finish();
       return;
     }
+    // Plays while in view, pauses when scrolled away, restarts on return.
+    let inView = false;
     const io = new IntersectionObserver(
       ([e]) => {
-        if (!e.isIntersecting) return;
-        io.disconnect();
-        play();
+        inView = e.isIntersecting;
+        if (inView) play();
+        else clear();
       },
       { threshold: 0.45 },
     );
     io.observe(el);
-    // A tab hidden mid-play would freeze it: jump to the end instead.
-    const onHide = () => document.hidden && finish();
-    document.addEventListener("visibilitychange", onHide);
+    const onVis = () => {
+      if (document.hidden) clear();
+      else if (inView) play();
+    };
+    document.addEventListener("visibilitychange", onVis);
     return () => {
       io.disconnect();
       clear();
-      document.removeEventListener("visibilitychange", onHide);
+      document.removeEventListener("visibilitychange", onVis);
     };
   }, [play, finish]);
 
@@ -323,17 +332,6 @@ export default function WorkspacePreview() {
             </div>
           );
         })}
-        {done && (
-          <button
-            onClick={play}
-            style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 6, height: 32, padding: "0 12px", border: "1px solid var(--border-strong)", borderRadius: 999, background: "transparent", color: "var(--fg-muted)", fontSize: 13, fontWeight: 600 }}
-          >
-            <svg width="12" height="12" viewBox="0 0 14 14" aria-hidden>
-              <path d="M2.5 7a4.5 4.5 0 1 0 1.4-3.3M2.5 2v2.5H5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            Replay
-          </button>
-        )}
       </div>
     </div>
   );

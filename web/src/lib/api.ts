@@ -116,9 +116,26 @@ export async function login(email: string, password: string) {
   return data;
 }
 
+export async function loginWithSupabase(accessToken: string) {
+  const data = await request<{ access_token: string; refresh_token: string }>("/api/auth/supabase", {
+    method: "POST",
+    body: JSON.stringify({ access_token: accessToken }),
+  });
+  setTokens(data.access_token, data.refresh_token);
+  return data;
+}
+
 export async function logout() {
   const refresh = getRefreshToken();
   clearTokens();
+  // Ends the shared Supabase session too, so signing out here signs out of
+  // the Bitronics site as well. Loaded on demand: most visitors never need it.
+  try {
+    const { googleEnabled, supabase } = await import("./supabase");
+    if (googleEnabled) await supabase().auth.signOut();
+  } catch {
+    /* best-effort */
+  }
   if (refresh) {
     try {
       await fetch(`${API_URL}/api/auth/logout`, {

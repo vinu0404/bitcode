@@ -11,11 +11,10 @@ import Button, { ArrowIcon } from "@/components/ui/Button";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import { getCatalogue } from "@/lib/api";
 import { useAuthReady } from "@/lib/auth";
-import { DOMAIN_ORDER, DOMAINS, pad2, padNumber } from "@/lib/domains";
-import ScopeField from "./ScopeField";
+import { DOMAINS, pad2, padNumber } from "@/lib/domains";
+import WorkspacePreview from "./WorkspacePreview";
 import SiteFooter from "./SiteFooter";
 import SmoothScroll from "./SmoothScroll";
-import WorkspacePreview from "./WorkspacePreview";
 
 const EXPO_OUT = cubicBezier(0.16, 1, 0.3, 1);
 const IN_OUT = cubicBezier(0.65, 0, 0.35, 1);
@@ -84,16 +83,12 @@ export default function Landing() {
     };
   }, []);
 
-  const channelsRef = useReveal<HTMLDivElement>((el) => {
-    const rows = el.querySelectorAll<HTMLElement>("[data-row]");
-    return animate(rows, { opacity: [0, 1], translateX: [-24, 0], duration: 800, delay: stagger(80), ease: EXPO_OUT });
-  });
   const problemsRef = useReveal<HTMLDivElement>((el) => {
     const rows = el.querySelectorAll<HTMLElement>("[data-row]");
     return animate(rows, { opacity: [0, 1], translateY: [16, 0], duration: 700, delay: stagger(70), ease: EXPO_OUT });
   });
 
-  // Public, read-only: number, title, difficulty and channel only.
+  // Public, read-only: number, title, difficulty and domain only.
   const catalogue = useQuery({ queryKey: ["public-catalogue"], queryFn: () => getCatalogue(4), staleTime: 5 * 60_000 });
   const openHref = (slug: string) => (authed ? `/bitcode/${slug}` : `/register?next=${encodeURIComponent(`/bitcode/${slug}`)}`);
 
@@ -109,46 +104,55 @@ export default function Landing() {
           <Wordmark size={34} />
         </Link>
         <nav className="bc-landing-nav" style={{ display: "flex", gap: 24, fontSize: 14, fontWeight: 600, color: "var(--fg-muted)" }}>
-          <a href="#preview">Preview</a>
           <a href="#problems">Problems</a>
-          <a href="#channels">Channels</a>
         </nav>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
           <ThemeToggle />
-          {authed === false && (
-            <Link href="/login" style={{ fontSize: 14, fontWeight: 600, color: "var(--fg-muted)" }}>
-              Log in
+          {authed === true && (
+            <Link href="/bitcode/progress">
+              <Button variant="primary" size="sm">
+                Open dashboard
+              </Button>
             </Link>
           )}
-          <Link href={ctaHref}>
-            <Button variant="primary" size="sm">
-              {ctaLabel}
-            </Button>
-          </Link>
+          {authed === false && (
+            <>
+              <Link href="/login" style={{ fontSize: 14, fontWeight: 600, color: "var(--fg-muted)" }}>
+                Log in
+              </Link>
+              <Link href="/register">
+                <Button variant="primary" size="sm">
+                  Sign up
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
       </header>
 
-      {/* ── hero ────────────────────────────────────────────────────── */}
-      <section ref={heroRef} style={{ position: "relative", minHeight: "100svh", display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: "120px clamp(16px, 4vw, 48px) 48px" }}>
-        <ScopeField />
-        <div style={{ position: "relative" }}>
-          <p data-fade className="mono" style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.2em", color: "var(--fg)", marginBottom: 24 }}>
-            BITRONICS / HARDWARE DESIGN PRACTICE
-          </p>
-          <h1 className="display" style={{ fontSize: "clamp(56px, 12.5vw, 220px)", lineHeight: 0.86 }}>
-            {["Write", "hardware.", "Prove it."].map((l, i) => (
-              <span key={l} style={{ display: "block", overflow: "hidden", paddingBottom: "0.04em" }}>
-                <span data-line style={{ display: "block", color: i === 2 ? "var(--ch1)" : undefined }}>
-                  {l}
+      {/* ── hero: the pitch, then the product doing its job ──────── */}
+      <section ref={heroRef} style={{ position: "relative", padding: "132px clamp(16px, 4vw, 48px) 120px", overflow: "clip" }}>
+        <div aria-hidden className="bc-hero-glow" />
+        <div className="graticule bc-hero-grid" aria-hidden />
+        <div style={{ position: "relative", maxWidth: 1240, margin: "0 auto" }}>
+          <div style={{ textAlign: "center" }}>
+            <p data-fade className="bc-hero-pill mono">
+              <span aria-hidden className="bc-hero-dot" /> BITRONICS / HARDWARE DESIGN PRACTICE
+            </p>
+            <h1 className="display" style={{ fontSize: "clamp(40px, 7.2vw, 120px)", lineHeight: 0.94, marginTop: 28 }}>
+              {["Practise", "hardware"].map((l) => (
+                <span key={l} style={{ display: "block", overflow: "hidden", paddingBottom: "0.04em" }}>
+                  <span data-line style={{ display: "block" }}>{l}</span>
                 </span>
+              ))}
+              <span style={{ display: "block", overflow: "hidden", paddingBottom: "0.06em" }}>
+                <span data-line style={{ display: "block", color: "var(--ch1)" }}>design.</span>
               </span>
-            ))}
-          </h1>
-          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 32, flexWrap: "wrap", marginTop: 40 }}>
-            <p data-fade style={{ fontSize: "clamp(16px, 1.6vw, 20px)", lineHeight: 1.5, maxWidth: 520, color: "var(--fg)" }}>
+            </h1>
+            <p data-fade style={{ fontSize: "clamp(16px, 1.6vw, 20px)", lineHeight: 1.55, maxWidth: 560, margin: "28px auto 0", color: "var(--fg-muted)" }}>
               Solve Verilog and SystemVerilog problems in your browser. Get a verdict in seconds, and see every edge of every signal.
             </p>
-            <div data-fade style={{ display: "flex", gap: 12, alignItems: "center" }}>
+            <div data-fade style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginTop: 32 }}>
               <Magnet>
                 <Link href={ctaHref}>
                   <Button variant="primary" size="lg" icon={<ArrowIcon />}>
@@ -156,35 +160,12 @@ export default function Landing() {
                   </Button>
                 </Link>
               </Magnet>
-              <a href="#preview">
-                <Button variant="secondary" size="lg">
-                  See how it feels
-                </Button>
-              </a>
             </div>
           </div>
+          <div data-fade className="bc-hero-demo">
+            <WorkspacePreview />
+          </div>
         </div>
-        {/* scope traces across the foot of the hero */}
-        <svg viewBox="0 0 1200 90" preserveAspectRatio="none" aria-hidden style={{ position: "relative", width: "100%", height: 90, marginTop: 48 }}>
-          <path data-trace d="M0 70H120V20H240V70H360V20H480V70H600V20H720V70H840V20H960V70H1080V20H1200" fill="none" stroke="var(--wave-clock)" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
-          <path data-trace d="M0 40H300L310 30H520L530 40L520 50H310L300 40M530 40H900L910 30H1200" fill="none" stroke="var(--wave-output)" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
-          <path data-trace d="M0 85H180V60H420V85H1200" fill="none" stroke="var(--wave-input)" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
-        </svg>
-      </section>
-
-      {/* ── what it is like to use ─────────────────────────────────── */}
-      <section id="preview" style={{ padding: "96px clamp(16px, 4vw, 48px) 120px", maxWidth: 1240, margin: "0 auto" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 24, flexWrap: "wrap", marginBottom: 40 }}>
-          <h2 className="display" style={{ fontSize: "clamp(44px, 6.5vw, 104px)", lineHeight: 0.9 }}>
-            Code it.
-            <br />
-            <span style={{ color: "var(--pass)" }}>Know it works.</span>
-          </h2>
-          <p style={{ fontSize: 17, lineHeight: 1.55, color: "var(--fg-muted)", maxWidth: 360 }}>
-            Nothing to install. Open a problem, write your module in the browser and press Submit.
-          </p>
-        </div>
-        <WorkspacePreview />
       </section>
 
       {/* ── real problems from the catalogue ───────────────────────── */}
@@ -222,29 +203,6 @@ export default function Landing() {
               The catalogue is not loading right now. <Link href="/bitcode" style={{ color: "var(--ch3-text)", fontWeight: 600 }}>Open the problem list</Link> instead.
             </p>
           )}
-        </div>
-      </section>
-
-      {/* ── channels ───────────────────────────────────────────────── */}
-      <section id="channels" style={{ padding: "40px clamp(16px, 4vw, 48px) 120px", maxWidth: 1240, margin: "0 auto" }}>
-        <h2 className="display" style={{ fontSize: "clamp(44px, 6.5vw, 104px)", lineHeight: 0.9, marginBottom: 32 }}>
-          Four channels.
-        </h2>
-        <div ref={channelsRef} style={{ borderTop: "1px solid var(--border)" }}>
-          {DOMAIN_ORDER.map((d) => {
-            const n = catalogue.data?.by_domain[d] ?? 0;
-            return (
-              <div key={d} data-row className="bc-channel-row" style={{ ["--row-ch" as string]: DOMAINS[d].fill }}>
-                <DomainBadge domain={d} compact />
-                <span className="display bc-channel-name" style={{ fontSize: "clamp(32px, 5vw, 72px)" }}>
-                  {DOMAINS[d].label}
-                </span>
-                <span className="mono" style={{ marginLeft: "auto", fontSize: 12, letterSpacing: "0.12em", color: n ? DOMAINS[d].text : "var(--fg-faint)" }}>
-                  {n ? `${pad2(n)} PROBLEMS` : "COMING SOON"}
-                </span>
-              </div>
-            );
-          })}
         </div>
       </section>
 
